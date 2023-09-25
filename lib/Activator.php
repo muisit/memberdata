@@ -28,6 +28,11 @@ namespace MemberData\Lib;
 
 use MemberData\Models\Migration;
 
+function memberdata_uninstall_hook()
+{
+    Activator::uninstall();
+}
+
 class Activator
 {
     private const CONFIG = MEMBERDATA_PACKAGENAME . "_version";
@@ -36,7 +41,7 @@ class Activator
     {
         register_activation_hook($plugin, fn() => self::activate());
         register_deactivation_hook($plugin, fn() => self::deactivate());
-        register_uninstall_hook($plugin, fn() => self::uninstall());
+        register_uninstall_hook($plugin, "memberdata_uninstall_hook");
         add_action('upgrader_process_complete', fn() => self::upgrade, 10, 2);
         add_action('plugins_loaded', fn() => self::update());
     }
@@ -54,7 +59,7 @@ class Activator
     {
     }
 
-    private static function uninstall()
+    public static function uninstall()
     {
         $model = new Migration();
         $model->uninstall();

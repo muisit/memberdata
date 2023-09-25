@@ -119,7 +119,7 @@ HEREDOC;
 
     public static function register($plugin)
     {
-        add_action('admin_enqueue_scripts', fn() => self::scripts());
+        add_action('admin_enqueue_scripts', fn($page) => self::scripts($page));
         add_action('admin_menu', fn() => self::adminMenu());
     }
 
