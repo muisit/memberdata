@@ -26,42 +26,8 @@
 
 namespace MemberData\Models;
 
-class MigrationObject extends Migration
+class MigrationObject
 {
-    public function save()
-    {
-        // when we save the MigrationObject, it is always new and unexecuted
-        $this->setKey(0);
-        $this->state = 'N';
-        parent::save();
-
-        // to actually interface with the DB object, first Find it and then
-        // use that base model
-    }
-
-    public function exists()
-    {
-        $results = $this->find('name', $this->name)->count();
-        return $results == 0;
-    }
-
-    public function checkDb()
-    {
-        if (!$this->exists() == 0) {
-            // this migrates filename and classname to the database
-            $this->save();
-        }
-    }
-
-    public function find()
-    {
-        $res = $this->find('name', $this->name)->first();
-        if (!empty($res)) {
-            return new Migration($res);
-        }
-        return new Migration();
-    }
-
     public function rawQuery($txt)
     {
         global $wpdb;
@@ -76,5 +42,40 @@ class MigrationObject extends Migration
     public function down()
     {
         error_log("abstract parent DOWN");
+    }
+
+    public function tableName($name)
+    {
+        global $wpdb;
+        return $wpdb->base_prefix . $name;
+    }
+
+    public function tableExists($tablename)
+    {
+        global $wpdb;
+        $table_name = $this->tableName($tablename);
+        $query = $wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table_name));
+        return $wpdb->get_var($query) == $table_name;
+    }
+
+    public function columnExists($tablename, $columnname)
+    {
+        global $wpdb;
+        $query = $wpdb->prepare('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s AND column_name = %s', $wpdb->esc_like($this->tableName($tablename)), $wpdb->esc_like($columnname));
+        return $wpdb->get_var($query) == $columnname;
+    }
+
+    public function createTable($tablename, $content)
+    {
+        global $wpdb;
+        $table_name = $this->tableName($tablename);
+        return $wpdb->query("CREATE TABLE $table_name $content;");
+    }
+
+    public function dropTable($tablename)
+    {
+        global $wpdb;
+        $table_name = $this->tableName($tablename);
+        return $wpdb->query("DROP TABLE $table_name;");
     }
 }

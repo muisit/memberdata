@@ -26,10 +26,10 @@
 
 namespace MemberData\Models;
 
-class Migration extends Base
+class Migration
 {
-    public $table = "memberdata_migration";
-    public $pk = "id";
+    private const CONFIG = "metadata_migrations";
+
     public $fields = array("id", "name", "status");
     public $rules = array(
         "id" => "skip",
@@ -37,67 +37,81 @@ class Migration extends Base
         "status" => "int"
     );
 
-    public function __construct($id = null)
+    public function __construct($data = null)
     {
-        parent::__construct($id);
+        foreach ($this->fields as $field) {
+            $this->{$field} = isset($data[$field]) ? $data[$field] : null;
+        }
     }
 
-    public function activate()
+    private function scanAllMigrations()
     {
-        if (!$this->tableExists($this->table)) {
-            $this->createTable($this->table, "( 
-                `id` INT NOT NULL AUTO_INCREMENT , 
-                `name` VARCHAR(255) NOT NULL , 
-                `status` INT NOT NULL,
-                PRIMARY KEY (`id`)) ENGINE = InnoDB; ");
-        }
-
         // load all the migration objects from the migrations subfolder
         $objects = scandir(dirname(__FILE__) . '/migrations');
-        $allmigrations = array();
+        $fileObjects = [];
         foreach ($objects as $filename) {
             $path = dirname(__FILE__) . "/migrations/" . $filename;
 
             if ($filename != '.' && $filename != '..' && is_file($path)) {
                 $model = $this->loadClassFile($path);
                 if (!empty($model)) {
-                    $model->checkDb();
-                    $allmigrations[$model->name] = $model;
+                    $fileObjects[$model->name] = $model;
                 }
             }
+        }
+        return $fileObjects;
+    }
+
+    public function activate()
+    {
+        // get the wordpress options field
+        $migrations = json_decode(get_option(self::CONFIG));
+        if (empty($migrations)) {
+            $migrations = [];
+            add_option(self::CONFIG, json_encode($migrations));
         }
 
-        foreach ($allmigrations as $model) {
-            $dbmodel = $model->find();
-            if (intval($dbmodel->status) == 0) {
-                $retval = $this->execute($dbmodel, $model);
+        $fileObjects = $this->scanAllMigrations();
+
+        foreach ($fileObjects as $name => $model) {
+            $wasRun = isset($migrations[$model->name]) ? true : false;
+            if (!$wasRun) {
+                $retval = $this->execute($model);
                 if ($retval !== 1) {
                     // failure to execute a migration means we need to stop
-                    error_log("breaking off migrations at " . $dbmodel->name);
+                    error_log("breaking off migrations at " . $model->name);
                     break;
                 }
+                $migrations[$model->name] = date('Y-m-d H:i:s');
             }
         }
+        update_option(self::CONFIG, json_encode($migrations));
     }
 
     public function uninstall()
     {
-        $allmigrations = array_reverse($this->selectAll());
-        foreach ($allmigrations as $model) {
-            if ($model->status == '1') {
-                $retval = $this->execute(new Migration($model)); // this should run the 'down' version
-                if ($retval !== 0) {
-                    // failure to execute a migration is no reason to stop
-                    error_log("failed rolling back a migration at " . $model->name);
-                }
-            }
+        // get the wordpress options field
+        $migrations = json_decode(get_option(self::CONFIG));
+        if (empty($migrations)) {
+            $migrations = [];
+            add_option(self::CONFIG, json_encode($migrations));
         }
 
-        // finally, remove our own table
-        global $wpdb;
-        $tablename = $wpdb->base_prefix . $this->table;
-        $sql = "DROP TABLE `$tablename`;";
-        $wpdb->query($sql);
+        $fileObjects = $this->scanAllMigrations();
+        foreach ($fileObjects as $name => $date) {
+            $wasRun = isset($migrations[$model->name]) ? true : false;
+            if ($wasRun) {
+                $retval = $this->execute($model, true);
+                if ($retval !== 0) {
+                    // failure to execute a migration means we need to stop
+                    error_log("failed rolling back a migration at " . $model->name);
+                    break;
+                }
+                $migrations[$model->name] = null;
+                unset($migrations[$model->name]);
+            }
+        }
+        update_option(self::CONFIG, json_encode($migrations));
     }
 
     private function loadClassFile($filename)
@@ -115,27 +129,18 @@ class Migration extends Base
         return null;
     }
 
-    public function execute($data, $model = null)
+    public function execute($model, $down = false)
     {
         $retval = -1;
         ob_start();
         try {
-            if (empty($model)) {
-                $model = $this->loadClassFile(dirname(__FILE__) . "/migrations/" . $data->name . '.php');
-            }
-            if (!empty($model)) {
-                if (intval($data->status) == 0) {
-                    if ($model->up()) {
-                        $data->status = 1;
-                        $data->save();
-                        $retval = 1;
-                    }
-                } else {
-                    if ($model->down()) {
-                        $data->status = 0;
-                        $data->save();
-                        $retval = 0;
-                    }
+            if ($down === false) {
+                if ($model->up()) {
+                    $retval = 1;
+                }
+            } else {
+                if ($model->down()) {
+                    $retval = 0;
                 }
             }
         }
@@ -144,40 +149,5 @@ class Migration extends Base
         }
         ob_end_clean();
         return $retval;
-    }
-
-    public function tableName($name)
-    {
-        global $wpdb;
-        return $wpdb->base_prefix . $name;
-    }
-
-    public function tableExists($tablename)
-    {
-        global $wpdb;
-        $table_name = $this->tableName($tablename);
-        $query = $wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table_name));
-        return $wpdb->get_var($query) == $table_name;
-    }
-
-    public function columnExists($tablename, $columnname)
-    {
-        global $wpdb;
-        $query = $wpdb->prepare('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s AND column_name = %s', $wpdb->esc_like($this->tableName($tablename)), $wpdb->esc_like($columnname));
-        return $wpdb->get_var($query) == $columnname;
-    }
-
-    public function createTable($tablename, $content)
-    {
-        global $wpdb;
-        $table_name = $this->tableName($tablename);
-        return $wpdb->query("CREATE TABLE $table_name $content;");
-    }
-
-    public function dropTable($tablename)
-    {
-        global $wpdb;
-        $table_name = $this->tableName($tablename);
-        return $wpdb->query("DROP TABLE $table_name;");
     }
 }
