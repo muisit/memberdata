@@ -85,13 +85,13 @@ HEREDOC;
             }
             if (isset($manifest[$entryPoint]['imports'])) {
                 foreach ($manifest[$entryPoint]['imports'] as $asset) {
-                    $this->enqueueAsset($asset, $manifest);
+                    self::enqueueAsset($asset, $manifest);
                 }
             }
             if (isset($manifest[$entryPoint]['file'])) {
                 $file = realpath(__DIR__ . '/../dist/' . $manifest[$entryPoint]['file']);
                 if (file_exists($file)) {
-                    $this->registerScriptModuleFilter(self::PACKAGENAME . '/' . basename($file));
+                    self::registerScriptModuleFilter(self::PACKAGENAME . '/' . basename($file));
                     $file = plugins_url('/dist/' . $manifest[$entryPoint]['file'], __DIR__);
                     wp_enqueue_script(self::PACKAGENAME . '/' . basename($file), $file, []);
                 }
@@ -112,7 +112,7 @@ HEREDOC;
         }
     }
 
-    private function registerScriptModuleFilter($handle)
+    private static function registerScriptModuleFilter($handle)
     {
         add_filter('script_loader_tag', fn (...$args) => self::setScriptTypeAttribute($handle, ...$args), 10, 3);
     }
@@ -126,8 +126,8 @@ HEREDOC;
     private static function adminMenu()
     {
         add_menu_page(
-            __('ELO'),
-            __('ELO'),
+            __('MemberData'),
+            __('MemberData'),
             'manage_' . self::PACKAGENAME,
             self::PACKAGENAME,
             fn() => Display::adminPage(),

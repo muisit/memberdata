@@ -1,0 +1,107 @@
+#memberdata-admin {
+    input, input:focus { 
+        border-width: 0px;
+        outline-width: 0px;
+        box-shadow: none;
+        background-color: var(--el-input-bg-color);
+    }
+
+    .configuration-header {
+        display: flex;
+        justify-content: right;
+        padding-right: 10vw;
+    }
+
+    .attribute {
+        display: flex;
+        justify-content: left;
+        padding: 10px 5px;
+        background-color: #eee;
+        border: 1px solid #ddd;
+        border-radius: 25px;
+        width: 60vw;
+        min-width: 350px;
+
+        .el-input__wrapper {
+            flex-grow: 0;
+        }
+
+        .attribute-handle {
+            width: 30px;
+            padding-top: 20px;
+        }
+
+        .attribute-settings {
+            width: 300px;
+
+            .el-input, input { 
+                width: 300px;
+            }
+
+            .attribute-type {
+                width: 100px;
+
+                .el-select, input {
+                    width: 100px;
+                }
+
+            }
+        }
+    }
+
+    .grid-actions {
+        display: flex;
+        justify-content: right;
+        padding-right: 10vw;
+    }
+
+    .data-grid {
+        table {
+            border-collapse: collapse;
+
+            thead {
+                tr {
+                    th {
+                        border-width: 0 0 2px 0;
+                        border-style: solid;
+                        border-color: black;
+                        font-weight: bold;
+                    }
+                }
+            }
+
+            tbody {
+                tr {
+                    td {
+                        border-width: 1px 0 1px 0;
+                        border-color: #888;
+                        border-style: solid;
+                        padding: 2px 4px;
+                    }
+                }
+            }
+        }
+    }
+
+    .el-dialog {
+        .el-form {
+            .el-form-item {
+                label {
+                    width: 150px;                   
+                }
+
+                .errors {
+                    .error {
+                        font-size: x-small;
+                        line-height: 1.2em;
+                        color: #d55;
+                        padding: 0 0 0 10px;
+                        border-width: 0 0 0 4px;
+                        margin: 0;
+                        box-shadow: none;                        
+                    }
+                }
+            }
+        }
+    }
+}

@@ -24,7 +24,9 @@
  * along with wp-elo.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace WPElo\Controllers;
+namespace MemberData\Controllers;
+
+use MemberData\Lib\Display;
 
 class Base
 {
@@ -52,9 +54,9 @@ class Base
     {
         $user = wp_get_current_user();
         if (!empty($user)) {
-            return "wpelo" . $user->ID;
+            return Display::PACKAGENAME . $user->ID;
         }
-        return "wpelo0";
+        return Display::PACKAGENAME . "0";
     }
 
     protected function fromGet($var, $def = null)
@@ -85,7 +87,7 @@ class Base
     protected function authenticate()
     {
         $this->checkNonce();
-        if (!current_user_can('manage_wpelo')) {
+        if (!current_user_can('manage_' . Display::PACKAGENAME)) {
             error_log("unauthenticated");
             die(403);
         }

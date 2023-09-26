@@ -1,5 +1,5 @@
 var controller = null;
-import { useDataStore } from '../src/stores/data';
+import { useDataStore } from '../stores/data';
 
 export function abort_all_calls() {
     if(controller) {
@@ -12,7 +12,7 @@ function validateResponse() {
     return res => {
         return res.json().then(json => {
             if (!json || !json.success) {
-                if (json.data && json.data.error) {
+                if (json && (json.data && json.data.error)) {
                     throw new Error('Validation', {cause: json.data});
                 }
                 else {
@@ -64,4 +64,25 @@ function validFetch(path, pdata, options, headers = {}) {
 
 function fetchJson(path, data={}, options = {}, headers = {}) {
     return validFetch(path, data, options, headers);
+}
+
+export function getConfiguration() {
+    return fetchJson('/configuration');
+}
+
+export function saveConfiguration(config) {
+    return fetchJson('/configuration/save', config);
+}
+
+export function getData(offset, pagesize, filter) {
+    return fetchJson('/data', {offset: offset, pagesize: pagesize, filter: filter});
+}
+export function saveAttribute(id, attribute, value) {
+    return fetchJson('/data/save', {id: id, attribute: attribute, value:value});
+}
+export function saveMember(member) {
+    return fetchJson('/data/save', {member: member});
+}
+export function deleteMember(member) {
+    return fetchJson('/data/delete', {id: member.id});
 }

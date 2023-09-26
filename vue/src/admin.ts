@@ -1,3 +1,4 @@
+import 'element-plus/dist/index.css'
 import './assets/admin.scss'
 
 import { createApp } from 'vue'

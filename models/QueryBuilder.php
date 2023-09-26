@@ -407,6 +407,18 @@ class QueryBuilder
         $this->_joinclause[] = array("tab" => $wpdb->base_prefix . $table, "al" => $alias, "cl" => $onclause, "dir" => $dr);
         return $this;
     }
+    public function leftJoin($table, $alias, $onclause)
+    {
+        return $this->join($table, $alias, $onclause, 'left');
+    }
+    public function innerJoin($table, $alias, $onclause)
+    {
+        return $this->join($table, $alias, $onclause, 'inner');
+    }
+    public function rightJoin($table, $alias, $onclause)
+    {
+        return $this->join($table, $alias, $onclause, 'right');
+    }
 
     public function orderBy($field, $dr = null)
     {
@@ -488,5 +500,14 @@ class QueryBuilder
         $this->_offset = $v;
         return $this;
     }
-}
 
+    public function __call(string $method, array $arguments)
+    {
+        if (isset($this->_model) && is_object($this->_model) && method_exists($this->_model, $method)) {
+            array_unshift($arguments, $this);
+            error_log('calling user func on _model: ' . $method . ' with ' . json_encode($arguments));
+            return call_user_func_array([$this->_model, $method], $arguments);
+        }
+        return $this;
+    }
+}

@@ -54,6 +54,12 @@ class Base
         }
     }
 
+    public function tableName($name = null)
+    {
+        global $wpdb;
+        return $wpdb->base_prefix . ($name === null ? $this->table : $name);
+    }
+
     public function getKey()
     {
         return !isset($this->{$this->pk}) ? -1 : $this->{$this->pk};
@@ -214,7 +220,7 @@ class Base
         if (!property_exists($this, $field)) {
             return false; // unset fields are never different
         }
-        if ($field === $this->pk && (!$this->isNew() || $this->{$this->pk} <= 0)) {
+        if ($field === $this->pk && !$this->isNew()) {
             return false; // cannot reset the PK
         }
         if (!isset($this->_ori_fields[$field])) {
@@ -277,7 +283,7 @@ class Base
         return $qb->from($this->table);
     }
 
-    public function select($p = null)
+    public function select($p = '*')
     {
         return $this->query()->select($p);
     }

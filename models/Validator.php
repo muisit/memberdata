@@ -118,6 +118,8 @@ class Validator
 
     public function validateRule(&$value, $ruleelements)
     {
+        error_log('validating rule ' . json_encode($ruleelements));
+        $rule = $ruleelements['rule'];
         // always pass if we have an empty value and this is not the required rule
         if ($rule != 'required' && empty($value)) {
             return true;
@@ -129,13 +131,13 @@ class Validator
         }
 
         if (method_exists($this, $rule . 'Rule')) {
-            return $this->{$rule . 'Rule'}($rule, $value, $ruleelements);
+            return $this->{$rule . 'Rule'}($value, $ruleelements);
         }
 
         return false;
     }
 
-    private function requiredRule($rule, &$value, $ruleelements)
+    private function requiredRule(&$value, $ruleelements)
     {
         $retval = !(empty($value) && $value !== false);
         if ($retval === false) {
@@ -145,32 +147,37 @@ class Validator
         return $retval;
     }
 
-    private function skipRule($rule, &$value, $ruleelements)
+    private function nullableRule(&$value, $ruleelements)
+    {
+        return true; // always true, whatever it contains
+    }
+
+    private function skipRule(&$value, $ruleelements)
     {
         return true;
     }
 
-    private function failRule($rule, &$value, $ruleelements)
+    private function failRule(&$value, $ruleelements)
     {
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : "{label} is an unsupported field";
         $this->addError($msg, $ruleelements);
         return false;
     }
 
-    private function intRule($rule, &$value, $ruleelements)
+    private function intRule(&$value, $ruleelements)
     {
         $value = intval($value);
         return true;
     }
 
-    private function floatRule($rule, &$value, $ruleelements)
+    private function floatRule(&$value, $ruleelements)
     {
-        $params = isset($ruleelements['params']) ? $ruleelements['params'] : '%f';
+        $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : '%f';
         $value = floatval(sprintf($format, floatval($value)));
         return true;
     }
 
-    private function boolRule($rule, &$value, $ruleelements)
+    private function boolRule(&$value, $ruleelements)
     {
         $tst = strtolower($value);
         if ($tst == 'y' || $tst == 't' || $tst == 'yes' || $tst == 'true' || $tst == 'on') {
@@ -185,8 +192,8 @@ class Validator
     private function compareRule($value, $ruleelements, $compareFunc)
     {
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : null;
-        $params = isset($ruleelements['params']) ? $ruleelements['params'] : '';
-        if (sizeof($params) == 1) {
+        $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : [];
+        if (count($params) == 1) {
             if (is_string($value)) {
                 $p1 = intval($params[0]);
                 list($retval, $msg) = $compareFunc('string', strlen($value), $p1, $msg);
@@ -213,7 +220,7 @@ class Validator
         return false;
     }
 
-    private function ltRule($rule, &$value, $ruleelements)
+    private function ltRule(&$value, $ruleelements)
     {
         return $this->compareRule($value, $ruleelements, function ($type, $v, $p, $msg) {
             switch ($type) {
@@ -231,9 +238,14 @@ class Validator
         });
     }
 
-    private function lteRule($rule, &$value, $ruleelements)
+    private function maxRule(&$value, $ruleelements)
     {
-        return $this->compareRule($value, $ruleelements, function ($type, $v, $p, $msg) {
+        return $this->lteRule($value, $ruleelements);
+    }
+
+    private function lteRule(&$value, $ruleelements)
+    {
+        return $this->compareRule($value, $ruleelements, function ($type, $v, $p1, $msg) {
             switch ($type) {
                 case 'string':
                     $msg = empty($msg) ? "{label} should contain no more than {p1} characters" : $msg;
@@ -249,9 +261,9 @@ class Validator
         });
     }
 
-    private function eqRule($rule, &$value, $ruleelements)
+    private function eqRule(&$value, $ruleelements)
     {
-        return $this->compareRule($value, $ruleelements, function ($type, $v, $p, $msg) {
+        return $this->compareRule($value, $ruleelements, function ($type, $v, $p1, $msg) {
             switch ($type) {
                 case 'string':
                     $msg = empty($msg) ? "{label} should contain exactly {p1} characters" : $msg;
@@ -267,9 +279,9 @@ class Validator
         });
     }
 
-    private function gtRule($rule, &$value, $ruleelements)
+    private function gtRule(&$value, $ruleelements)
     {
-        return $this->compareRule($value, $ruleelements, function ($type, $v, $p, $msg) {
+        return $this->compareRule($value, $ruleelements, function ($type, $v, $p1, $msg) {
             switch ($type) {
                 case 'string':
                     $msg = empty($msg) ? "{label} should contain more than {p1} characters" : $msg;
@@ -285,9 +297,14 @@ class Validator
         });
     }
     
-    private function gteRule($rule, &$value, $ruleelements)
+    private function minRule(&$value, $ruleelements)
     {
-        return $this->compareRule($value, $ruleelements, function ($type, $v, $p, $msg) {
+        return $this->gteRule($value, $ruleelements);
+    }
+
+    private function gteRule(&$value, $ruleelements)
+    {
+        return $this->compareRule($value, $ruleelements, function ($type, $v, $p1, $msg) {
             switch ($type) {
                 case 'string':
                     $msg = empty($msg) ? "{label} should contain no less than {p1} characters" : $msg;
@@ -303,31 +320,31 @@ class Validator
         });
     }
 
-    private function trimRule($rule, &$value, $ruleelements)
+    private function trimRule(&$value, $ruleelements)
     {
         $value = trim("$value");
         return true;
     }
 
-    private function upperRule($rule, &$value, $ruleelements)
+    private function upperRule(&$value, $ruleelements)
     {
         $value = strtoupper($value);
         return true;
     }
 
-    private function ucfirstRule($rule, &$value, $ruleelements)
+    private function ucfirstRule(&$value, $ruleelements)
     {
         $value = ucfirst($value);
         return true;
     }
 
-    private function lowerRule($rule, &$value, $ruleelements)
+    private function lowerRule(&$value, $ruleelements)
     {
         $value = strtolower($value);
         return true;
     }
 
-    private function emailRule($rule, &$value, $ruleelements)
+    private function emailRule(&$value, $ruleelements)
     {
         $retval = filter_var($value, FILTER_VALIDATE_EMAIL);
         if ($retval === false) {
@@ -337,7 +354,7 @@ class Validator
         return $retval;
     }
 
-    private function urlRule($rule, &$value, $ruleelements)
+    private function urlRule(&$value, $ruleelements)
     {
         $retval = filter_var($value, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED);
         if ($retval === false) {
@@ -347,7 +364,7 @@ class Validator
         return $retval;
     }
 
-    private function dateRule($rule, &$value, $ruleelements)
+    private function dateRule(&$value, $ruleelements)
     {
         $retval = $this->sanitizeDate($value);
         if ($retval === false) {
@@ -357,7 +374,7 @@ class Validator
         return $retval;
     }
 
-    private function datetimeRule($rule, &$value, $ruleelements)
+    private function datetimeRule(&$value, $ruleelements)
     {
         $retval = $this->sanitizeDateTime($value);
         if ($retval === false) {
@@ -367,15 +384,15 @@ class Validator
         return $retval;
     }
 
-    private function jsonRule($rule, &$value, $ruleelements)
+    private function jsonRule(&$value, $ruleelements)
     {
         $value = json_encode($value);
         return true;
     }
 
-    private function enumRule($rule, &$value, $ruleelements)
+    private function enumRule(&$value, $ruleelements)
     {
-        $params = isset($ruleelements['params']) ? $ruleelements['params'] : [];
+        $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : [];
         $retval = in_array($value, $params);
         if ($retval === false) {
             $msg = isset($ruleelements['message']) ? $ruleelements['message'] : "{label} should be one of {p1}";
@@ -385,9 +402,9 @@ class Validator
         return $retval;
     }
 
-    private function modelRule($rule, &$value, $ruleelements)
+    private function modelRule(&$value, $ruleelements)
     {
-        $params = isset($ruleelements['params']) ? $ruleelements['params'] : [];
+        $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : [];
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : null;
         $retval = false;
         if (count($params) > 0) {
@@ -417,9 +434,9 @@ class Validator
         return $retval;
     }
 
-    private function containsRule($rule, &$value, $ruleelements)
+    private function containsRule(&$value, $ruleelements)
     {
-        $params = isset($ruleelements['params']) ? $ruleelements['params'] : [];
+        $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : [];
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : null;
         $retval = false;
         if (count($params) > 0 && is_array($value)) {
@@ -459,7 +476,7 @@ class Validator
     }
 
 
-    private function addErrorMessage($msg, $ruleelements)
+    private function addError($msg, $ruleelements)
     {
         $rule = $ruleelements['rule'];
         $label = $ruleelements['label'];

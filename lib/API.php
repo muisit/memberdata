@@ -26,10 +26,17 @@
 
 namespace MemberData\Lib;
 
+use MemberData\Controllers\Configuration;
+use MemberData\Controllers\Data;
+
 class API
 {
     private $routes = [
-//        'configuration.post' => [Configuration::class, 'index'],
+        'configuration.post' => [Configuration::class, 'index'],
+        'configuration.save.post' => [Configuration::class, 'save'],
+        'data.post' => [Data::class, 'index'],
+        'data.save.post' => [Data::class, 'save'],
+        'data.delete.post' => [Data::class, 'delete']
     ];
 
     public function resolve()
@@ -96,6 +103,18 @@ class API
     {
         add_action('wp_ajax_' . Display::PACKAGENAME, fn($page) => self::ajaxHandler($page));
         add_action('wp_ajax_nopriv_' . Display::PACKAGENAME, fn($page) => self::ajaxHandler($page));
+
+        add_filter(Display::PACKAGENAME . '_attribute_types', function ($config) {
+            $config["text"] = ["label" => "Text", "rules" => "required|max=100", "options" => null];
+            $config["int"] = ["label" => "Integer", "rules" => "required|min=0"];
+            $config["number"] = ["label" => "Number", "rules" => "required|min=0"];
+            $config["email"] = ["label" => "E-mail", "rules" => "required|email"];
+            $config["money"] = ["label" => "Money", "rules" => "required|min=0", "options" => "text", "optdefault" => "%.2f"];
+            $config["date"] = ["label" => "Date", "rules" => "required|date", "options" => "text", "optdefault" => 'Y-m-d'];
+            $config["datetime"] = ["label" => "Date + Time", "rules" => "required|datetime", "options" => "text", "optdefault" => 'Y-m-d H:i:s'];
+            $config["enum"] = ["label" => "Enumeration", "rules" => "required|enum", "options" => "text", "optdefault" => "opt1|opt2"];
+            return $config;
+        });
     }
 
     private static function ajaxHandler($page)
