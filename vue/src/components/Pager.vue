@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 const props = defineProps<{
     count: number;
-    offset: number;
+    page: number;
     pagesize: number;
 }>();
 const emits = defineEmits(['goTo']);
@@ -16,29 +16,29 @@ function pages()
         }
     }
     else {
-        if (currentPage() < 5) {
-            for (var i = 0; i < currentPage(); i++) {
+        if (props.page < 5) {
+            for (var i = 0; i < props.page; i++) {
                 retval.push(i);
             }
         }
         else {
             retval.push(0);
             retval.push(null); // mark separation
-            retval.push(currentPage() - 3);
-            retval.push(currentPage() - 2);
-            retval.push(currentPage() - 1);
+            retval.push(props.page - 3);
+            retval.push(props.page - 2);
+            retval.push(props.page - 1);
         }
-        retval.push(currentPage());
+        retval.push(props.page);
 
-        if ((lastPage() - currentPage()) < 5) {
-            for (var i = currentPage() + 1; i <= lastPage(); i++) {
+        if ((lastPage() - props.page) < 5) {
+            for (var i = props.page + 1; i <= lastPage(); i++) {
                 retval.push(i);
             }
         }
         else {
-            retval.push(currentPage() + 1);
-            retval.push(currentPage() + 2);
-            retval.push(currentPage() + 3);
+            retval.push(props.page + 1);
+            retval.push(props.page + 2);
+            retval.push(props.page + 3);
             retval.push(null); // mark separation
             retval.push(lastPage());
         }
@@ -50,12 +50,6 @@ function lastPage()
 {
     if (props.pagesize <= 0) return 1;
     return Math.ceil(props.count / props.pagesize) - 1;
-}
-
-function currentPage()
-{
-    if (props.pagesize <= 0) return 1;
-    return Math.floor(props.offset / props.pagesize);
 }
 
 function goToFirst()
@@ -70,12 +64,12 @@ function goToLast()
 
 function goToPrevious()
 {
-    emits('goTo', currentPage() - 1);
+    emits('goTo', props.page - 1);
 }
 
 function goToNext()
 {
-    emits('goTo', currentPage() + 1);
+    emits('goTo', props.page + 1);
 }
 
 import { ElIcon } from 'element-plus';
@@ -83,12 +77,13 @@ import { DArrowLeft, ArrowLeft, ArrowRight, DArrowRight } from '@element-plus/ic
 </script>
 <template>
     <div class="pager" v-if="props.count > props.pagesize && props.pagesize > 0">
-        <div :class="{'page-button': true, 'disabled': props.offset == 0}" @click="goToFirst()">
+        {{ props.count }} / {{ props.pagesize }} / {{ props.page }}
+        <div :class="{'page-button': true, 'disabled': props.page == 0}" @click="goToFirst()">
             <ElIcon size="large">
                 <DArrowLeft/>
             </ElIcon>
         </div>
-        <div :class="{'page-button': true, 'disabled': props.offset == 0}" @click="goToPrevious()">
+        <div :class="{'page-button': true, 'disabled': props.page == 0}" @click="goToPrevious()">
             <ElIcon size="large">
                 <ArrowLeft/>
             </ElIcon>
@@ -98,18 +93,18 @@ import { DArrowLeft, ArrowLeft, ArrowRight, DArrowRight } from '@element-plus/ic
             :class="{
                 'page-button': true,
                 'page-number': true,
-                'active': currentPage() == pageNum,
+                'active': props.page == pageNum,
                 'separator': pageNum === null
         }">
             <span>{{ pageNum === null ? '...' : pageNum }}</span>
         </div>
 
-        <div :class="{'page-button': true, 'disabled': currentPage() == lastPage()}" @click="goToNext()">
+        <div :class="{'page-button': true, 'disabled': props.page == lastPage()}" @click="goToNext()">
             <ElIcon size="large">
                 <ArrowRight/>
             </ElIcon>
         </div>
-        <div :class="{'page-button': true, 'disabled': currentPage() == lastPage()}" @click="goToLast()">
+        <div :class="{'page-button': true, 'disabled': props.page == lastPage()}" @click="goToLast()">
             <ElIcon size="large">
                 <DArrowRight/>
             </ElIcon>
