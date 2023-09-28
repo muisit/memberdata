@@ -30,7 +30,6 @@ function saveForm()
         var value = '' + (props.member[attribute.name] || '');
         var result = validateAttribute(attribute, value);
         if (result.length) {
-            console.log('adding errors', result, ' to ', attribute.name);
             errorMessages.value[attribute.name] = result;
             messages = messages.concat(result);
         }

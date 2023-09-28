@@ -28,7 +28,7 @@ export function validateAttribute(attribute:Attribute, value:string): Array<stri
 
 function validateRule(rule:string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult
 {
-    var elements = rule.split('=', 1);
+    var elements = rule.split('=', 2);
     if (ruleImplementations[elements[0]]) {
         var ruleName = elements[0];
         if (ruleName == 'max') ruleName = 'lte';
@@ -66,19 +66,19 @@ function convertDateToDayJSFormat(format:string)
 }
 
 function comparisonFunc(params: string, attribute:Attribute, value:string, rules:Array<string>, callback:Function): RuleValidationResult {
-    if (rules.includes('int')) {
+    if (attribute.type == 'int' || rules.includes('int')) {
         var limit = parseInt(params);
         var val = parseInt(value);
         return callback(attribute, 'value', val, limit);
     }
-    else if (rules.includes('float')) {
+    else if (attribute.type == 'number' || rules.includes('float')) {
         var limit = parseFloat(params);
         var val = parseFloat(value);
         if (!isNaN(limit) && !isNaN(val)) {
             return callback(attribute, 'value', val, limit);
         }
     }
-    else if(rules.includes('date') || rules.includes('datetime')) {
+    else if(['date','datetime'].includes(attribute.type) || rules.includes('date') || rules.includes('datetime')) {
         var dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
         var dt2 = dayjs(params, convertDateToDayJSFormat(attribute.options));
         if (dt.isValid() && dt2.isValid()) {

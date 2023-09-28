@@ -42,9 +42,7 @@ function onDelete(member:Member)
     if (confirm("Delete this entry from the database? The data will be difficult to retrieve.")) {
         data.deleteMember(member)
             .then((retval) => {
-                console.log('delete data', retval);
                 if (retval.data && retval.success && !retval.data.error) {
-                    console.log('reloading data based on settings');
                     data.getData(offset.value, pagesize.value, filter.value, sorter.value, sortdir.value);
                     alert("Entry was succesfully removed");
                 }
@@ -61,9 +59,9 @@ function closeUpdate()
 function saveUpdate()
 {
     data.saveMember(selectedMember.value)
-        .then((data) => {
-            if (data && data.length) {
-                alert("There were back-end validation issues. Data was not completely saved.\r\n" + data.join('\r\n'));
+        .then((result) => {
+            if (result && result.length) {
+                alert("There were back-end validation issues. Data was not completely saved.\r\n" + result.join('\r\n'));
             }
             else {
                 updateDialogVisible.value = false;
@@ -84,14 +82,20 @@ import MemberUpdateDialog from './MemberUpdateDialog.vue';
 import { ElButton } from 'element-plus';
 </script>
 <template>
-    <div class="grid-actions">
-        <ElButton type="primary" @click="addRow">Add</ElButton>
-    </div>
-    <div class="data-grid">
-        <table>
-            <GridHeader />
-            <GridBody @on-edit="onEdit" @on-delete="onDelete"/>
-        </table>
-        <MemberUpdateDialog :member="selectedMember" :visible="updateDialogVisible" @on-close="closeUpdate" @on-save="saveUpdate" @on-update="updateMember" />
+    <div class="container">
+        <div class="grid-actions">
+            <ElButton type="primary" @click="addRow">Add</ElButton>
+        </div>
+        <div class="data-grid">
+            <div class="scroll-container">
+                <div class="inner-container">
+                    <table>
+                        <GridHeader />
+                        <GridBody @on-edit="onEdit" @on-delete="onDelete"/>
+                    </table>
+                </div>
+            </div>
+            <MemberUpdateDialog :member="selectedMember" :visible="updateDialogVisible" @on-close="closeUpdate" @on-save="saveUpdate" @on-update="updateMember" />
+        </div>
     </div>
 </template>

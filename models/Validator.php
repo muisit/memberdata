@@ -194,13 +194,13 @@ class Validator
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : null;
         $params = isset($ruleelements['parameters']) ? $ruleelements['parameters'] : [];
         if (count($params) == 1) {
-            if (is_string($value)) {
-                $p1 = intval($params[0]);
-                list($retval, $msg) = $compareFunc('string', strlen($value), $p1, $msg);
-            }
-            elseif (is_numeric($value)) {
+            if (is_numeric($value)) {
                 $p1 = floatval($params[0]);
                 list($retval, $msg) = $compareFunc('value', floatval($value), $p1, $msg);
+            }
+            elseif (is_string($value)) {
+                $p1 = intval($params[0]);
+                list($retval, $msg) = $compareFunc('string', strlen($value), $p1, $msg);
             }
             elseif ($this->isDate($value)) {
                 $p1 = date_parse($params[0]);
@@ -481,7 +481,7 @@ class Validator
         $rule = $ruleelements['rule'];
         $label = $ruleelements['label'];
         $p1 = isset($ruleelements['p1']) ? $ruleelements['p1'] : null;
-        $p1 = isset($ruleelements['p2']) ? $ruleelements['p2'] : null;
+        $p2 = isset($ruleelements['p2']) ? $ruleelements['p2'] : null;
 
         $msg = str_replace(array("{label}", "{rule}", "{p1}", "{p2}"), array($label, $rule, $p1, $p2), $msg);
         $this->errors[] = $msg;

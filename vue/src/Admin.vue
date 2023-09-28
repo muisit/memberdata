@@ -17,10 +17,10 @@ import ConfigurationView from './components/ConfigurationView.vue';
 import DataView from './components/DataView.vue';
 </script>
 <template>
-    <div>
+    <div class="container">
         <h1>Memberdata Manager</h1>
         <ElTabs v-model="tabindex">
-            <ElTabPane label="Data" name="data">
+            <ElTabPane label="Data" name="data" class="container">
                 <DataView :index="tabindex"/>
             </ElTabPane>
             <ElTabPane label="Settings" name="settings">

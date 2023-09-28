@@ -34,7 +34,6 @@ export const useDataStore = defineStore('data', () => {
 
     function getConfiguration()
     {
-        console.log('getting configuration');
         return getConfigurationAPI().then((data:any) => {
             if (data.data) {
                 types.value = data.data.types;
@@ -91,9 +90,8 @@ export const useDataStore = defineStore('data', () => {
 
     function updateAttribute(data:Attribute)
     {
-        console.log('updateing attribute ', data.id);
         var newConfig = configuration.value.map((attribute) => {
-            if (attribute.id == data.id) {
+            if (attribute.name == data.name) {
                 return data;
             }
             return attribute;
@@ -141,7 +139,6 @@ export const useDataStore = defineStore('data', () => {
 
     function addNewMember()
     {
-        console.log('adding new row to list of size ', dataList.value.length);
         var newId = -1;
         dataList.value.forEach((member) => {
             if (member.id <= newId) {
@@ -151,7 +148,6 @@ export const useDataStore = defineStore('data', () => {
         dataList.value.push({id: newId});
         saveAttribute(newId, '', '')
             .then((data) => {
-                console.log(data);
                 if (data && data.data && data.data.id) {
                     var newList = dataList.value.map((member) => {
                         if (member.id == newId) {
