@@ -40,21 +40,33 @@ class Data extends Base
         $filter = isset($data['model']['filter']) ? $data['model']['filter'] : null;
         $sorter = isset($data['model']['sorter']) ? $data['model']['sorter'] : null;
         $sortDirection = isset($data['model']['sortdir']) ? $data['model']['sortdir'] : null;
+        $cutoff = isset($data['model']['cutoff']) ? intval($data['model']['cutoff']) : 100;
 
         $memberModel = new Member();
-        $qb = $memberModel->select('id')->addFilter($filter);
+        $qb = $memberModel->select($memberModel->tableName() . '.id')->addFilter($filter);
+        $count = (clone $qb)->count();
 
+        error_log('post data is ' . json_encode($data['model']));
         if (!empty($sorter)) {
             $dir = 'asc';
-            if (in_array(['asc', 'desc'], $sortDirection)) {
+            if (in_array($sortDirection, ['asc', 'desc'])) {
                 $dir = $sortDirection;
             }
-            $qb->withEva()->where('eva.attribute', $sorter)->orderBy($sorter, $sortDirection);
+            if ($sorter != 'id') {
+                $qb->withEva()->where('eva.attribute', $sorter)->orderBy($sorter, $sortDirection);
+            }
+            else {
+                $qb->orderBy($memberModel->tableName() . '.id', $sortDirection);
+            }
         }
-        $count = (clone $qb)->count();
-        $results = $qb->offset($offset)->limit($pagesize)->get();
 
-        $results = $memberModel->collectAttributes($results);
+        // use cutoff to determine if we can return the whole set, or just a page
+        error_log("count $count, cutoff $cutoff, pagesize $pagesize, offset $offset");
+        if ($count > $cutoff && $pagesize > 0 && $offset >= 0) {
+            $qb->offset($offset)->limit($pagesize);
+        }
+
+        $results = $memberModel->collectAttributes($qb->get());
 
         return [
             'total' => $count,

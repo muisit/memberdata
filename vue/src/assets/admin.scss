@@ -66,6 +66,46 @@
         justify-content: right;
         padding-right: 10vw;
         padding-bottom: 10px;
+
+        .pager {
+            display: flex;
+            padding: 2px 15px;
+            justify-content: center;
+            font-weight: bold;
+
+            .page-button {
+                font-size: 1.4em;
+                line-height: 1.8em;
+                height: 1.8em;
+                width: 1.8em;
+                text-align: center;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding-top: 4px;
+                margin: 0px 5px;
+                cursor:pointer;
+            }
+
+            .page-number { 
+                background-color: #ddf;
+            }
+
+            .disabled {
+                background-color: #ccc;
+                color: #777;
+                cursor:not-allowed;             
+            }
+
+            .active {
+                background-color: #dfd;
+                cursor: default;
+            }
+
+            .separator {
+                border-width: 0px;
+                background-color: inherit;
+            }
+        }
     }
 
     .data-grid {

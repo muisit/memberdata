@@ -1,14 +1,17 @@
 <script lang="ts" setup>
+import type { Member } from '../stores/data';
+const props = defineProps<{
+    dataList: Array<Member>;
+    member: object;
+}>();
 const emits = defineEmits(['onEdit', 'onDelete']);
-import { useDataStore } from '../stores/data';
-const data = useDataStore();
 
 import GridRow from './GridRow.vue';
 </script>
 <template>
     <tbody>
         <GridRow
-            v-for="member in data.dataList"
+            v-for="member in props.dataList"
             :key="member.id"
             :member="member"
             @on-delete="$emit('onDelete', member)"

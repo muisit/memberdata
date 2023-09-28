@@ -99,9 +99,9 @@ export const useDataStore = defineStore('data', () => {
         configuration.value = newConfig;
     }
 
-    function getData(offset:number, pagesize:number, filter:string, sorter:string, sortDirection: string)
+    function getData(offset:number, pagesize:number, filter:string, sorter:string, sortDirection: string, cutoff: number)
     {
-        return getDataAPI(offset, pagesize, filter, sorter, sortDirection)
+        return getDataAPI(offset, pagesize, filter, sorter, sortDirection, cutoff)
             .then((data:any) => {
                 if (data.data) {
                     dataCount.value = parseInt(data.data.total);
@@ -117,7 +117,7 @@ export const useDataStore = defineStore('data', () => {
             });
     }
 
-    function saveMember(member:Member): Array<string>
+    function saveMember(member:Member)
     {
         return saveMemberAPI(member)
             .then((data:any) => {
@@ -152,6 +152,7 @@ export const useDataStore = defineStore('data', () => {
                     var newList = dataList.value.map((member) => {
                         if (member.id == newId) {
                             member.id = data.data.id;
+                            dataCount.value += 1; // succesfully added a new member
                         }
                         return member;
                     });
@@ -173,10 +174,21 @@ export const useDataStore = defineStore('data', () => {
     function deleteMember(member:Member)
     {
         return deleteMemberAPI(member)
+            .then((data:any) => {
+                if (data.data && data.success) {
+                    dataList.value = dataList.value.filter((item) => item.id != member.id);
+                    dataCount.value -= 1;
+                }
+            })
             .catch((e) => {
                 console.log(e);
                 alert("There was a network problem while deleting this entry. Please reload the page and try again");
             })
+    }
+
+    function applyPagerSorterFilter(offset:number, pagesize:number, filter:string, sorter:string, sortdir: string)
+    {
+
     }
 
     return {
@@ -185,6 +197,7 @@ export const useDataStore = defineStore('data', () => {
         getConfiguration, saveConfiguration, addAttribute, updateAttribute,
 
         dataCount, dataList,
-        getData, saveAttribute, saveMember, addNewMember, updateMember, deleteMember
+        getData, saveAttribute, saveMember, addNewMember, updateMember, deleteMember,
+        applyPagerSorterFilter
     }
 })

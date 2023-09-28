@@ -65,6 +65,7 @@ class Member extends Base
 
     public function collectAttributes(array $results)
     {
+        error_log('collection attributes of ' . count($results) . ' results');
         $resultsById = [];
         foreach ($results as $row) {
             $member = new static($row);

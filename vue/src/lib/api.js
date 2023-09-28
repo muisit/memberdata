@@ -74,8 +74,8 @@ export function saveConfiguration(config) {
     return fetchJson('/configuration/save', config);
 }
 
-export function getData(offset, pagesize, filter) {
-    return fetchJson('/data', {offset: offset, pagesize: pagesize, filter: filter});
+export function getData(offset, pagesize, filter, sorter, sortDirection, cutoff) {
+    return fetchJson('/data', {offset: offset, pagesize: pagesize, cutoff: cutoff, filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
 export function saveAttribute(id, attribute, value) {
     return fetchJson('/data/save', {id: id, attribute: attribute, value:value});
