@@ -83,6 +83,9 @@ class Configuration extends Base
                 if (isset($attribute["options"])) {
                     $a["options"] = $attribute["options"];
                 }
+                if (isset($attribute["filter"])) {
+                    $a["filter"] = $attribute["filter"];
+                }
                 $retval[] = $a;
             }
         }

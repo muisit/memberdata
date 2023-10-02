@@ -58,9 +58,12 @@ class Member extends Base
         return $evaModel;
     }
 
-    public function withEva(QueryBuilder $builder)
+    public function withEva(QueryBuilder $builder, $attribute, $joinname = 'eva')
     {
-        return $builder->leftJoin('memberdata_eva', 'eva', 'eva.member_id = ' . $this->tableName() . '.id');
+        $eva = new EVA();
+        $subquery = $builder->sub()->from($eva->table)->select(['member_id', 'value'])->where('attribute', $attribute)->get();
+        error_log("adding join with alias $joinname");
+        return $builder->leftJoin($subquery, $joinname, $joinname . '.member_id = ' . $this->tableName() . '.id');
     }
 
     public function collectAttributes(array $results)

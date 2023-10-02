@@ -77,7 +77,6 @@ import { DArrowLeft, ArrowLeft, ArrowRight, DArrowRight } from '@element-plus/ic
 </script>
 <template>
     <div class="pager" v-if="props.count > props.pagesize && props.pagesize > 0">
-        {{ props.count }} / {{ props.pagesize }} / {{ props.page }}
         <div :class="{'page-button': true, 'disabled': props.page == 0}" @click="goToFirst()">
             <ElIcon size="large">
                 <DArrowLeft/>

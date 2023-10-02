@@ -4,11 +4,14 @@ import type { Ref } from 'vue';
 const props = defineProps<{
     page: number;
     pagesize: number;
+    sorter: string;
+    sortdir: string;
+    filter: FilterSpecByKey;
 }>();
-const emits = defineEmits(['onDelete']);
+const emits = defineEmits(['onDelete', 'updateSorter', 'updateFilter']);
 
 import { useDataStore } from '../stores/data';
-import type { Member } from '../stores/data';
+import type { FilterSpecByKey, Member } from '../stores/data';
 const data = useDataStore();
 
 const updateDialogVisible = ref(false);
@@ -78,11 +81,11 @@ import MemberUpdateDialog from './MemberUpdateDialog.vue';
 </script>
 <template>
     <div class="data-grid">
+        {{ props.sorter }} {{ props.sortdir}} / {{  props.filter }}
         <div class="scroll-container">
             <div class="inner-container">
-                {{ props.pagesize }} * {{ props.page }}
                 <table>
-                    <GridHeader />
+                    <GridHeader :sorter="props.sorter" :sortdir="props.sortdir" :filter="props.filter" @update-sorter="(v) => $emit('updateSorter', v)" @update-filter="(v) => $emit('updateFilter', v)" />
                     <GridBody @on-edit="onEdit" @on-delete="onDelete" :data-list="getDataList()"/>
                 </table>
             </div>

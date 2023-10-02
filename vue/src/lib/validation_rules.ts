@@ -1,6 +1,7 @@
 import type {Attribute, Member} from '@/stores/data';
 import validator from 'validator';
 import { dayjs } from 'element-plus';
+import { convertDateToDayJSFormat } from './functions';
 
 interface RuleValidationResult {
     value: string;
@@ -38,32 +39,6 @@ function validateRule(rule:string, attribute:Attribute, value:string, rules:Arra
     return {value: value};
 }
 
-function convertDateToDayJSFormat(format:string)
-{
-    var retval = '';
-    for (var i = 0; i < format.length; i++) {
-        var c = format[i];
-        switch (c) {
-            case 'a': retval += 'a'; break;
-            case 'A': retval += 'A'; break;
-            case 'y': retval += 'YY'; break;
-            case 'Y': retval += 'YYYY'; break;
-            case 'n': retval += 'M'; break;
-            case 'm': retval += 'MM'; break;
-            case 'j': retval += 'D'; break;
-            case 'd': retval += 'DD'; break;
-            case 'H': retval += 'HH'; break;
-            case 'h': retval += 'H'; break;
-            case 'G': retval += 'hh'; break;
-            case 'g': retval += 'h'; break;
-            case 'i': retval += 'mm'; break;
-            case 's': retval += 'ss'; break;
-            case 'P': retval += 'Z'; break;
-            default: retval += c; break;
-        }
-    }
-    return retval;
-}
 
 function comparisonFunc(params: string, attribute:Attribute, value:string, rules:Array<string>, callback:Function): RuleValidationResult {
     if (attribute.type == 'int' || rules.includes('int')) {

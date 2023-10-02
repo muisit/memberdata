@@ -27,6 +27,7 @@ function onUpdate(attribute, field)
         case 'type':
         case 'rules':
         case 'options':
+        case 'filter':
             attribute[field.field] = field.value;
             break;
     }

@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import type { Ref } from 'vue';
 const props = defineProps<{
     visible:boolean;
-    attribute: AttributeByKey;
     member: Member;
 }>();
 const emits = defineEmits(['onClose', 'onUpdate', 'onSave']);

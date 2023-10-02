@@ -304,7 +304,7 @@ class Base
         if (!empty($values)) {
             // find all the variables and replace them with proper markers based on the values
             // then prepare the query
-            $pattern = "/{[a-f0-9]+}/";
+            $pattern = "/{[_a-f0-9]+}/";
             $matches = array();
             $replvals = array();
             if (preg_match_all($pattern, $query, $matches)) {

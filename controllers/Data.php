@@ -29,9 +29,12 @@ namespace MemberData\Controllers;
 use MemberData\Models\Member;
 use MemberData\Models\Eva;
 use MemberData\Lib\Display;
+use MemberData\Models\QueryBuilder;
 
 class Data extends Base
 {
+    private $joinAliases = [];
+
     public function index($data)
     {
         $this->authenticate();
@@ -39,29 +42,21 @@ class Data extends Base
         $pagesize = isset($data['model']['pagesize']) ? intval($data['model']['pagesize']) : 1;
         $filter = isset($data['model']['filter']) ? $data['model']['filter'] : null;
         $sorter = isset($data['model']['sorter']) ? $data['model']['sorter'] : null;
-        $sortDirection = isset($data['model']['sortdir']) ? $data['model']['sortdir'] : null;
+        $sortDirection = isset($data['model']['sortDirection']) ? $data['model']['sortDirection'] : null;
         $cutoff = isset($data['model']['cutoff']) ? intval($data['model']['cutoff']) : 100;
 
         $memberModel = new Member();
-        $qb = $memberModel->select($memberModel->tableName() . '.id')->addFilter($filter);
-        $count = (clone $qb)->count();
+        $qb = $memberModel->select($memberModel->tableName() . '.id');
+        $qb = $this->combineWithEva($qb, $filter, $sorter);
+        $count = $this->addFilter($qb, $filter)->count();
 
-        error_log('post data is ' . json_encode($data['model']));
-        if (!empty($sorter)) {
-            $dir = 'asc';
-            if (in_array($sortDirection, ['asc', 'desc'])) {
-                $dir = $sortDirection;
-            }
-            if ($sorter != 'id') {
-                $qb->withEva()->where('eva.attribute', $sorter)->orderBy($sorter, $sortDirection);
-            }
-            else {
-                $qb->orderBy($memberModel->tableName() . '.id', $sortDirection);
-            }
-        }
+        $this->joinAliases = [];
+        $qb = $memberModel->select($memberModel->tableName() . '.id');
+        $qb = $this->combineWithEva($qb, $filter, $sorter);
+        $qb = $this->addSorter($qb, $memberModel, $sorter, $sortDirection);
+        $qb = $this->addFilter($qb, $filter);
 
         // use cutoff to determine if we can return the whole set, or just a page
-        error_log("count $count, cutoff $cutoff, pagesize $pagesize, offset $offset");
         if ($count > $cutoff && $pagesize > 0 && $offset >= 0) {
             $qb->offset($offset)->limit($pagesize);
         }
@@ -70,8 +65,114 @@ class Data extends Base
 
         return [
             'total' => $count,
-            'list' => $results
+            'list' => $results,
+            'filters' => $this->determineFilters()
         ];
+    }
+
+    private function addFilter(QueryBuilder $qb, array $filter)
+    {
+        $config = $this->getConfig();
+        foreach ($config as $attribute) {
+            $aname = $attribute['name'];
+            if (isset($filter[$aname])) {
+                $search = $filter[$aname]["search"];
+                if ($search == null) {
+                    $search = '';
+                }
+                $search = strtolower(trim($search));
+
+                if (strlen($search) || count($filter[$aname]["values"]) > 0) {
+                    $alias = $this->joinAliases[$aname];
+                    $sub = $qb->sub();
+
+                    if (strlen($search)) {
+                        $sub->orWhere('LOWER(' . $alias . '.value)', 'like', '%' . $search . '%');
+                    }
+
+                    foreach ($filter[$aname]["values"] as $filtervar) {
+                        if ($filtervar === null) {
+                            $sub->orWhere($alias . '.value', null);
+                        }
+                        else {
+                            $sub->orWhere($alias . '.value', $filtervar);
+                        }
+                    }
+                    $qb->where($sub->get());
+                }
+            }
+        }
+        if (!isset($filter['withTrashed'])) {
+            $qb->where('softdeleted', null);
+        }
+        return $qb;
+    }
+
+    private function addSorter(QueryBuilder $qb, $memberModel, $sorter, $sortDirection)
+    {
+        if (!empty($sorter)) {
+            $dir = 'asc';
+            if (in_array($sortDirection, ['asc', 'desc'])) {
+                $dir = $sortDirection;
+            }
+            if ($sorter != 'id') {
+                $qb->orderBy('eva.value IS NULL', 'asc')->orderBy('eva.value', $dir);
+            }
+            else {
+                $qb->orderBy($memberModel->tableName() . '.id', $dir);
+            }
+        }
+        return $qb;
+    }
+
+    private function combineWithEva(QueryBuilder $qb, $filter, $sorter)
+    {
+        if (!empty($sorter) && $sorter != 'id') {
+            error_log('combining eva with sorter ' . $sorter);
+            $qb->withEva($sorter, 'eva');
+        }
+
+        error_log('combining with filter '.json_encode($filter));
+        if (!empty($filter)) {
+            $config = $this->getConfig();
+            foreach ($config as $attribute) {
+                $aname = $attribute['name'];
+                error_log("checking for attribute $aname");
+                if (isset($filter[$aname]) && count($filter[$aname])) {
+                    error_log("adding filter join for $aname");
+                    $alias = "al" . count($this->joinAliases);
+                    if ($aname == $sorter) {
+                        error_log("$aname is sorter $sorter");
+                        $alias = 'eva';
+                    }
+                    else {
+                        $qb->withEva($aname, strtolower($alias));
+                    }
+                    $this->joinAliases[$aname] = $alias;
+                }
+            }
+        }
+        return $qb;
+    }
+
+    private function determineFilters()
+    {
+        $filters = array();
+        $config = $this->getConfig();
+        $memberModel = new Member();
+        foreach ($config as $attribute) {
+            if (isset($attribute['filter']) && $attribute['filter'] == 'Y') {
+                $values = $memberModel->select(['eva.value', 'count(*) as cnt'])
+                    ->withEva($attribute['name'])
+                    ->groupBy('eva.value')
+                    ->having('cnt > 1')
+                    ->orderBy('cnt', 'desc')
+                    ->orderBy('eva.value')
+                    ->get();
+                $filters[$attribute['name']] = array_map(fn($a) => $a->value, $values);
+            }
+        }
+        return $filters;
     }
 
     public function delete($data)
@@ -82,7 +183,6 @@ class Data extends Base
         $memberModel = new Member($memberId);
         $memberModel->load();
 
-        error_log("deleting model $memberId");
         if (!$memberModel->isNew()) {
             $memberModel->softDelete();
         }
@@ -91,7 +191,6 @@ class Data extends Base
 
     public function save($data)
     {
-        error_log("saving attribute and model data");
         $this->authenticate();
 
         $memberId = isset($data['model']['id']) ? $data['model']['id'] : 0;
@@ -151,13 +250,15 @@ class Data extends Base
         return false;
     }
 
+    private $_config = null;
     private function getConfig()
     {
-        $config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
-        if (empty($config)) {
-            $config = [];
-            add_option(Display::PACKAGENAME . '_configuration', json_encode($config));
+        if (empty($this->_config)) {
+            $this->_config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
+            if (empty($this->_config)) {
+                $this->_config = [];
+            }
         }
-        return $config;
+        return $this->_config;
     }
 }

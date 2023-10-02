@@ -30,6 +30,8 @@ class QueryBuilder
 {
     private $_model = null;
     private $_issub = false;
+    private $_instanceid = '';
+    private $_where_index = 0;
     private $_action = "select";
     private $_select_fields = array();
     private $_where_clauses = array();
@@ -46,6 +48,13 @@ class QueryBuilder
     {
         $this->_model = $model;
         $this->_issub = $issub;
+        $this->_instanceid = uniqid();
+    }
+
+    private function getUniqWhereId()
+    {
+        $this->_where_index += 1;
+        return $this->_instanceid . '_' . $this->_where_index;
     }
 
     public function sub()
@@ -75,7 +84,7 @@ class QueryBuilder
         $values = array();
         $fields = array();
         foreach ($this->_select_fields as $f => $n) {
-            $id = uniqid();
+            $id = $this->getUniqWhereId();
             $fields[] = $f;
             $values[] = "{" . $id . "}";
             $this->_where_values[$id] = $n;
@@ -150,7 +159,7 @@ class QueryBuilder
             case 'set':
                 $first = true;
                 foreach ($this->_select_fields as $f => $n) {
-                    $id = uniqid();
+                    $id = $this->getUniqWhereId();
                     if ($first) {
                         $retval = " SET ";
                     }
@@ -170,13 +179,7 @@ class QueryBuilder
             case 'join':
                 if (sizeof($this->_joinclause)) {
                     foreach ($this->_joinclause as $jc) {
-                        if (strpos($jc["tab"], " ") !== false) {
-                            // add brackets around the subquery
-                            $retval .= " " . $jc["dir"] . " JOIN (" . $jc["tab"] . ") " . $jc['al'] . " ON " . $jc['cl'];
-                        }
-                        else {
-                            $retval .= " " . $jc["dir"] . " JOIN " . $jc["tab"] . " " . $jc['al'] . " ON " . $jc['cl'];
-                        }
+                        $retval .= " " . $jc["dir"] . " JOIN " . $jc["tab"] . " " . $jc['al'] . " ON " . $jc['cl'];
                     }
                 }
                 break;
@@ -244,8 +247,8 @@ class QueryBuilder
         $sql .= $this->buildClause("groupby");
         $sql .= $this->buildClause("having");
         // model is a QueryBuilder
-        $this->_model->_where_values = $this->_model->_where_values + $this->_where_values;
-        return $sql;
+        $this->_model->_where_values = array_merge($this->_model->_where_values, $this->_where_values);
+        return '(' . $sql . ')';
     }
 
     public function reselect($f = null)
@@ -384,7 +387,7 @@ class QueryBuilder
                 }
             }
             else {
-                $id = uniqid();
+                $id = $this->getUniqWhereId();
                 $this->_where_values[$id] = $clause;
                 $this->_where_clauses[] = array($andor, $field . ' ' . $comparison . ' {' . $id . '}');
             }
@@ -403,8 +406,7 @@ class QueryBuilder
         if (empty($dr)) {
             $dr = "left";
         }
-        global $wpdb;
-        $this->_joinclause[] = array("tab" => $wpdb->base_prefix . $table, "al" => $alias, "cl" => $onclause, "dir" => $dr);
+        $this->_joinclause[] = array("tab" => $table, "al" => $alias, "cl" => $onclause, "dir" => $dr);
         return $this;
     }
     public function leftJoin($table, $alias, $onclause)
@@ -505,7 +507,7 @@ class QueryBuilder
     {
         if (isset($this->_model) && is_object($this->_model) && method_exists($this->_model, $method)) {
             array_unshift($arguments, $this);
-            error_log('calling user func on _model: ' . $method . ' with ' . json_encode($arguments));
+            error_log("calling user func array with arguments " . json_encode($arguments));
             return call_user_func_array([$this->_model, $method], $arguments);
         }
         return $this;

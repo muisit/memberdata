@@ -2,7 +2,6 @@
 import type { Member } from '../stores/data';
 const props = defineProps<{
     dataList: Array<Member>;
-    member: object;
 }>();
 const emits = defineEmits(['onEdit', 'onDelete']);
 

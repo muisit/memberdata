@@ -1,27 +1,28 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
+import { random_token } from '@/lib/functions';
 const props = defineProps<{
     index:string
 }>();
 
 import { useDataStore } from '../stores/data';
-import type { Member } from '../stores/data';
+import type { FilterSpecByKey } from '../stores/data';
 const data = useDataStore();
 
 const currentpage = ref(0);
 const pagesize = ref('25');
-const filter = ref('');
+const filter:Ref<FilterSpecByKey> = ref({});
 const sorter = ref('id');
 const sortdir = ref('asc');
 
 function getOffset()
 {
     if (parseInt(pagesize.value) <= 0) return 0;
-    return currentpage.value / parseInt(pagesize.value);
+    return currentpage.value * parseInt(pagesize.value);
 }
 
-function updateData()
+function updateData(cb:Function|null = null)
 {
     data.getData(
         getOffset(),
@@ -29,13 +30,14 @@ function updateData()
         filter.value,
         sorter.value,
         sortdir.value,
-        200 // if the total is less than this cutoff, everything is returned anyway
+        500, // if the total is less than this cutoff, everything is returned anyway
+        cb // callback to check if updating is still useful
     );
 }
 
 function hasWholeList()
 {
-    return data.dataList.length > 0 && data.dataList.length == data.dataCount;
+    return data.originalData.length > 0 && data.originalData.length == data.dataCount;
 }
 
 watch(
@@ -49,13 +51,22 @@ watch(
     { immediate: true }
 )
 
+var nonewfilter = '';
+
 watch(
     () => [pagesize.value, filter.value, sorter.value, sortdir.value, currentpage.value],
     (nw) => {
-        console.log("update of pagesize, offset, filter, sorter or sortdir")
+        console.log('filter change');
         // if we do not have the whole list, use server side sorting and paging
         if (!hasWholeList()) {
-            updateData();
+            console.log('does not have whole new list');
+            var newtoken = random_token();
+            nonewfilter = newtoken;
+            window.setTimeout(() => {
+                if (newtoken == nonewfilter) {
+                    updateData(() => newtoken == nonewfilter);
+                }
+            }, 500);
         }
         else {
             // else use client side sorting and paging
@@ -77,17 +88,14 @@ function shouldDisplayPager()
 
 function switchPage(pagenum:number)
 {
-    console.log('switch page to ',pagenum);
     if (pagenum < 0) pagenum = 0;
     if (parseInt(pagesize.value) <= 0) {
         pagenum = 0;
     }
     else {
         var lastpage = Math.ceil(data.dataCount / parseInt(pagesize.value));
-        console.log('lastpage is ', lastpage, data.dataCount, pagesize.value);
         if (pagenum > lastpage) pagenum = lastpage;
     }
-    console.log('setting currentpage to ', pagenum);
     currentpage.value = pagenum;
 }
 
@@ -97,6 +105,13 @@ function onDeleteMember()
         // update the list to apply paging and sorting on the server side
         updateData();
     }
+}
+
+function updateFilter(settings:any)
+{
+    var newFilter = Object.assign({}, filter.value);
+    newFilter[settings.attribute] = settings.filter;
+    filter.value = newFilter;
 }
 
 import Pager from './Pager.vue';
@@ -117,6 +132,15 @@ import { ElButton, ElSelect, ElOption } from 'element-plus';
             </ElSelect>
             <ElButton type="primary" @click="addRow">Add</ElButton>
         </div>
-        <MemberGrid :page="currentpage" :pagesize="parseInt(pagesize)" @on-delete="onDeleteMember"/>
+        <MemberGrid
+            :page="currentpage"
+            :pagesize="parseInt(pagesize)"
+            :sorter="sorter"
+            :sortdir="sortdir"
+            :filter="filter"
+            @on-delete="onDeleteMember"
+            @update-sorter="(v) => { sorter = v[0]; sortdir = v[1]}"
+            @update-filter="updateFilter"
+            />            
     </div>
 </template>
