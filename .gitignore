@@ -14,4 +14,6 @@ node_modules
 # vendor files
 vendor
 
+# environment
+.env
 

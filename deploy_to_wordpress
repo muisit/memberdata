@@ -1,0 +1,122 @@
+#!/bin/bash
+
+source  .env
+
+RELEASE="1"
+MAJOR="0"
+MINOR="0"
+NOGIT="0"
+
+while [ $# -gt 0 ]
+do
+    arg=$1
+    shift
+    
+    if [[ "x$arg" = "x-v" ]]
+    then
+        RELEASE="1"
+        MINOR="1"
+    fi
+
+    if [[ "x$arg" = "x-r" ]]
+    then
+        RELEASE="1"        
+        MAJOR="1"
+    fi
+
+    if [[ "x$arg" = "x-h" ]]
+    then
+        echo "Deploy to Wordpress script"
+        echo "Copyright (C) 2020-2023 muis IT https://www.muisit.nl"
+        echo ""
+        echo "deploy_to_wordpress [options]"
+        echo ""
+        echo "-h           print this help text"
+        echo "-r           release a major release (tag with major value upgraded)"
+        echo "-v           release a minor release (tag with minor value upgraded)"
+        echo ""
+        echo "Add the WPDIR directory location of the destination SVN repository in the"
+        echo ".env file next to this script. Set the PROJECT variable to the name of"
+        echo "the project/plugin name/file containing the version number."
+        exit
+    fi
+done
+
+if [[ "x$MAJOR" = "x1" && "x$MINOR" = "x1" ]]
+then
+    echo "Major release requires a minor version of 0, ignoring -v"
+    MINOR="0"
+fi
+
+VERSION=`grep "* Version" "$PROJECT.php" | sed 's/[^0-9]*\([0-9\.]*\).*/\1/'`
+MAJ=`echo $VERSION | sed 's/\([0-9]*\).*/\1/'`
+MIN=`echo $VERSION | sed 's/[0-9]*\.\([0-9]*\).*/\1/'`
+MICR=`echo $VERSION | sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
+
+if [[ "x1" = "x$MAJOR" ]]
+then
+    echo "Performing major release"
+    let "MAJ=$MAJ+1"
+    MIN="0"
+    MICR="0"
+else
+    if [[ "x1" = "x$MINOR" ]]
+    then
+        echo "Performing minor release"
+        let "MIN=$MIN+1"
+        MICR="0"
+    else
+        if [[ "x$RELEASE" = "x1" ]]
+        then
+            echo "Performing micro release"
+            let "MICR=$MICR+1"
+        fi
+    fi
+fi
+
+echo "Version ${MAJ}.${MIN}.${MICR}"
+
+#echo "Running JS tests"
+#npm run --silent test -- --silent >/dev/null 2>&1
+#if [[ ! "x$?" = "x0" ]]
+#then
+#    echo "Javascript tests fail, please run tests yourself"
+#    echo "npm run --silent test"
+#    exit 1
+#else 
+#    echo "Javascript tests succeed"
+#fi
+
+#phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
+#phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+#if [[ ! "x$?" = "x0" ]]
+#then
+#    echo "PHPUnit tests fail, please run tests yourself"
+#    echo "phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+#    exit 1
+#else
+#    echo "PHPUnit tests succeed"
+#fi
+
+cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > tmp.$$
+mv tmp.$$ "$PROJECT.php"
+cat "$PROJECT.php" |  sed "s/\(define.*VERSION[^\"]*\"\)[^\"]*\(\".*\)/\1${MAJ}.${MIN}.${MICR}\2/"  > tmp.$$
+mv tmp.$$ "$PROJECT.php"
+cat "package.json" | sed "s/\(.*\"version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
+mv tmp.$$ "package.json"
+mg create tag "${MAJ}.${MIN}.${MICR}" -m "auto tagged commit"
+
+# perform a production build before we deploy
+cd vue
+npm run build
+
+mkdir -p $WPDIR/trunk
+
+cp -r -v *.php LICENSE readme.txt controllers lib models vendor dist $WPDIR/trunk
+
+cd /tmp
+cp -darpv $WPDIR /tmp/$PROJECT
+zip -r $PROJECT $PROJECT
+mv $PROJECT.zip $WPDIR
+rm -rf /tmp/$PROJECT
+
