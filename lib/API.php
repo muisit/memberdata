@@ -36,7 +36,8 @@ class API
         'configuration.save.post' => [Configuration::class, 'save'],
         'data.post' => [Data::class, 'index'],
         'data.save.post' => [Data::class, 'save'],
-        'data.delete.post' => [Data::class, 'delete']
+        'data.delete.post' => [Data::class, 'delete'],
+        'data.export.post' => [Data::class, 'export']
     ];
 
     public function resolve()

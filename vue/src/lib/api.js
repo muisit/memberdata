@@ -24,7 +24,44 @@ function validateResponse() {
     };
 }
 
-function validFetch(path, pdata, options, headers = {}) {
+function getFileNameFromContentDispostionHeader(header) {
+    var contentDispostion = header.split(';');
+    const fileNameToken = `filename=`;
+
+    var fileName = 'downloaded.dat';
+    contentDispostion.forEach((thisValue) => {
+        if (thisValue.trim().indexOf(fileNameToken) === 0) {
+            fileName = decodeURIComponent(thisValue.replace(fileNameToken, ''));
+        }
+    });
+    return fileName;
+};
+
+function attachmentResponse() {
+    return async res => {
+        const blob = await res.blob();
+        var filename = getFileNameFromContentDispostionHeader(res.headers.get('content-disposition'));
+        var mimetype = res.headers.get('content-type');
+
+        var newBlob = new Blob([blob], {type: mimetype});
+        if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            window.navigator.msSaveOrOpenBlob(newBlob);
+        }
+        else {
+            const objUrl = window.URL.createObjectURL(newBlob);
+
+            var link = document.createElement('a');
+            link.href = objUrl;
+            link.download = filename;
+            link.click();
+
+            // For Firefox it is necessary to delay revoking the ObjectURL.
+            setTimeout(() => { window.URL.revokeObjectURL(objUrl); }, 250);
+        }
+    };
+}
+
+function validFetch(path, pdata, options, headers, responseHandler) {
     if(!controller) {
         controller = new AbortController();
     }
@@ -51,7 +88,7 @@ function validFetch(path, pdata, options, headers = {}) {
     });
 
     return fetch(dataStore ? dataStore.baseUrl : '', fetchOptions)
-        .then(validateResponse())
+        .then(responseHandler())
         .catch(err => {
             if(err.name === "AbortError") {
                 console.log('disregarding aborted call');
@@ -63,7 +100,14 @@ function validFetch(path, pdata, options, headers = {}) {
 }
 
 function fetchJson(path, data={}, options = {}, headers = {}) {
-    return validFetch(path, data, options, headers);
+    return validFetch(path, data, options, headers, validateResponse);
+}
+
+function fetchAttachment(path, fname, data = {}, options = {}, headers = {}) {
+    headers = Object.assign({
+        "Accept": "*",
+    }, headers);
+    return validFetch(path, data, options, headers, attachmentResponse);
 }
 
 export function getConfiguration() {
@@ -76,6 +120,9 @@ export function saveConfiguration(config) {
 
 export function getData(offset, pagesize, filter, sorter, sortDirection, cutoff) {
     return fetchJson('/data', {offset: offset, pagesize: pagesize, cutoff: cutoff, filter: filter, sorter: sorter, sortDirection: sortDirection});
+}
+export function exportData(fname, filter, sorter, sortDirection) {
+    return fetchAttachment('/data/export', fname, {filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
 export function saveAttribute(id, attribute, value) {
     return fetchJson('/data/save', {id: id, attribute: attribute, value:value});

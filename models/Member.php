@@ -62,7 +62,6 @@ class Member extends Base
     {
         $eva = new EVA();
         $subquery = $builder->sub()->from($eva->table)->select(['member_id', 'value'])->where('attribute', $attribute)->get();
-        error_log("adding join with alias $joinname");
         return $builder->leftJoin($subquery, $joinname, $joinname . '.member_id = ' . $this->tableName() . '.id');
     }
 

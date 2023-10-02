@@ -69,6 +69,15 @@
         padding-right: 10vw;
         padding-bottom: 10px;
 
+        .el-select { 
+            width: 90px;
+            margin-top: 2px;
+        }
+
+        .el-button {
+            margin: 2px 5px 0px 10px;
+        }
+
         .pager {
             display: flex;
             padding: 2px 15px;

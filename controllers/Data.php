@@ -30,6 +30,8 @@ use MemberData\Models\Member;
 use MemberData\Models\Eva;
 use MemberData\Lib\Display;
 use MemberData\Models\QueryBuilder;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class Data extends Base
 {
@@ -68,6 +70,49 @@ class Data extends Base
             'list' => $results,
             'filters' => $this->determineFilters()
         ];
+    }
+
+    public function export($data)
+    {
+        $this->authenticate();
+        $filter = isset($data['model']['filter']) ? $data['model']['filter'] : null;
+        $sorter = isset($data['model']['sorter']) ? $data['model']['sorter'] : null;
+        $sortDirection = isset($data['model']['sortDirection']) ? $data['model']['sortDirection'] : null;
+
+        $memberModel = new Member();
+        $qb = $memberModel->select($memberModel->tableName() . '.id');
+        $qb = $this->combineWithEva($qb, $filter, $sorter);
+        $qb = $this->addSorter($qb, $memberModel, $sorter, $sortDirection);
+        $qb = $this->addFilter($qb, $filter);
+
+        $results = $memberModel->collectAttributes($qb->get());
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $config = $this->getConfig();
+        $i = 1;
+        $j = 1;
+        foreach ($config as $attribute) {
+            $sheet->setCellValueByColumnAndRow($i++, $j, $attribute['name']);
+        }
+
+        $j += 1;
+        foreach ($results as $result) {
+            $i = 1;
+            $sheet->setCellValueByColumnAndRow($i++, $j, $result['id']);
+            foreach ($config as $attribute) {
+                $v = isset($result[$attribute['name']]) ? $result[$attribute['name']] : '';
+                $sheet->setCellValueByColumnAndRow($i++, $j, $v);
+            }
+            $j++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="export.xlsx"');
+        $writer->save('php://output');
+        exit(0);
     }
 
     private function addFilter(QueryBuilder $qb, array $filter)
@@ -128,21 +173,16 @@ class Data extends Base
     private function combineWithEva(QueryBuilder $qb, $filter, $sorter)
     {
         if (!empty($sorter) && $sorter != 'id') {
-            error_log('combining eva with sorter ' . $sorter);
             $qb->withEva($sorter, 'eva');
         }
 
-        error_log('combining with filter '.json_encode($filter));
         if (!empty($filter)) {
             $config = $this->getConfig();
             foreach ($config as $attribute) {
                 $aname = $attribute['name'];
-                error_log("checking for attribute $aname");
                 if (isset($filter[$aname]) && count($filter[$aname])) {
-                    error_log("adding filter join for $aname");
                     $alias = "al" . count($this->joinAliases);
                     if ($aname == $sorter) {
-                        error_log("$aname is sorter $sorter");
                         $alias = 'eva';
                     }
                     else {

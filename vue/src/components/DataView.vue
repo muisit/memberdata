@@ -114,6 +114,15 @@ function updateFilter(settings:any)
     filter.value = newFilter;
 }
 
+function exportSheet()
+{
+    data.exportData(
+        filter.value,
+        sorter.value,
+        sortdir.value
+    );
+}
+
 import Pager from './Pager.vue';
 import MemberGrid from './MemberGrid.vue';
 import { ElButton, ElSelect, ElOption } from 'element-plus';
@@ -130,6 +139,7 @@ import { ElButton, ElSelect, ElOption } from 'element-plus';
                 <ElOption value="250" label="250" v-if="data.dataCount > 250"/>
                 <ElOption value="0" label="All" v-if="data.dataCount < 500"/>
             </ElSelect>
+            <ElButton type="secondary" @click="exportSheet">Export</ElButton>
             <ElButton type="primary" @click="addRow">Add</ElButton>
         </div>
         <MemberGrid

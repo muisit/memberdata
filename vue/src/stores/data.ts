@@ -3,7 +3,8 @@ import type { Ref } from 'vue';
 import { defineStore } from 'pinia'
 import {
     getConfiguration as getConfigurationAPI, saveConfiguration as saveConfigurationAPI,
-    getData as getDataAPI, saveAttribute as saveAttributeAPI, saveMember as saveMemberAPI, deleteMember as deleteMemberAPI
+    getData as getDataAPI, saveAttribute as saveAttributeAPI, saveMember as saveMemberAPI, deleteMember as deleteMemberAPI,
+    exportData as exportDataAPI
 } from '../lib/api.js';
 import { sort_members } from '../lib/sort_members';
 import { filter_members } from '../lib/filter_members.js';
@@ -146,6 +147,11 @@ export const useDataStore = defineStore('data', () => {
             });
     }
 
+    function exportData(filter:FilterSpecByKey, sorter:string, sortDirection: string)
+    {
+        return exportDataAPI("export.xslx", filter, sorter, sortDirection);
+    }
+
     function saveMember(member:Member)
     {
         return saveMemberAPI(member)
@@ -237,7 +243,7 @@ export const useDataStore = defineStore('data', () => {
         getConfiguration, saveConfiguration, addAttribute, updateAttribute,
 
         dataCount, dataList, originalData, dataFilters,
-        getData, saveAttribute, saveMember, addNewMember, updateMember, deleteMember,
+        getData, exportData, saveAttribute, saveMember, addNewMember, updateMember, deleteMember,
         applyPagerSorterFilter
     }
 })

@@ -14,7 +14,7 @@
  * Description:         Basic registration of membership data without creating WP accounts
  * Version:             1.0.0
  * Requires at least:   6.1
- * Requires PHP:        7.2
+ * Requires PHP:        8.0
  * Author:              Michiel Uitdehaag
  * Author URI:          https://www.muisit.nl
  * License:             GNU GPLv3
@@ -57,6 +57,7 @@ function memberdata_autoloader($name)
 }
 
 spl_autoload_register('memberdata_autoloader');
+require_once('vendor/autoload.php');
 
 if (defined('ABSPATH')) {
     \MemberData\Lib\Activator::register(__FILE__);
