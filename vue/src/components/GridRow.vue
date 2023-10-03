@@ -1,6 +1,7 @@
 <script lang="ts" setup>
+import type { Member } from '../lib/types';
 const props = defineProps<{
-    member: object;
+    member: Member;
 }>();
 const emits = defineEmits(['onEdit', 'onDelete']);
 
@@ -29,7 +30,7 @@ import { Edit, DeleteFilled } from '@element-plus/icons-vue';
         <td>
             <ElIcon size="large"><Edit @click="editEntry" /></ElIcon>
         </td>
-        <GridCell :attribute="{name: 'id'}" :member="props.member"/>
-        <GridCell v-for="attribute in data.configuration" :key="attribute.id" :attribute="attribute" :member="props.member"/>
+        <GridCell :attribute="{name: 'id', type: 'int', filter: 'N'}" :member="props.member"/>
+        <GridCell v-for="attribute in data.configuration" :key="attribute.name" :attribute="attribute" :member="props.member"/>
     </tr>
 </template>

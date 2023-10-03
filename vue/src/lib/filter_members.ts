@@ -1,17 +1,17 @@
-import type { Member, FilterSpecByKey } from "../stores/data";
+import type { Member, FilterSpecByKey } from "../lib/types";
 
 export function filter_members(value: Member, filter:FilterSpecByKey)
 {
     if (!Object.keys(filter)) return true;
 
-    var retval = true;
+    let retval = true;
     Object.keys(filter).forEach((attrname) => {
         // for each filter with a set of values, the value must match it, or the filter is false
-        var foundMatch = false;
-        var shouldSearch = false;
+        let foundMatch = false;
+        let shouldSearch = false;
         if (filter[attrname].search && filter[attrname].search?.trim().length) {
             shouldSearch = true;
-            var searchFor = filter[attrname].search?.toLowerCase().trim();
+            const searchFor = filter[attrname].search?.toLowerCase().trim();
             if (value[attrname] && value[attrname].toString().toLowerCase().includes(searchFor || '')) {
                 foundMatch = true;
             }

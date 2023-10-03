@@ -1,4 +1,4 @@
-export function pad(number) {
+export function pad(number:number) {
     if (number < 10) {
         return '0' + number;
     }
@@ -14,9 +14,9 @@ export function is_valid(id:any) {
 
 export function convertDateToDayJSFormat(format:string)
 {
-    var retval = '';
-    for (var i = 0; i < format.length; i++) {
-        var c = format[i];
+    let retval = '';
+    for (let i = 0; i < format.length; i++) {
+        const c = format[i];
         switch (c) {
             case 'a': retval += 'a'; break;
             case 'A': retval += 'A'; break;
@@ -52,8 +52,8 @@ export function random_from_list(chars:string)
 export function random_token()
 {
     const randomChars="abcdefghijklmnopqrstuvwxyz0123456789";
-    var retval = '';
-    for (var i = 0; i< 16; i++) {
+    let retval = '';
+    for (let i = 0; i< 16; i++) {
         retval += random_from_list(randomChars);
     }
     return retval;

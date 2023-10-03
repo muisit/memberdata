@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { Attribute } from '../stores/data';
+import type { Attribute } from '../lib/types';
 const props = defineProps<{
     attribute:Attribute;
 }>();
@@ -17,7 +16,6 @@ function showOptions()
 
 function update(field:string, value:string)
 {
-    console.log('update for ', field, value);
     emits('onUpdate', {field: field, value: value});
 
     if (field == 'type') {
@@ -32,7 +30,7 @@ function listAttributeTypes()
     var types = data.types;
     var retval:Array<Attribute> = [];
     Object.keys(types).forEach((key) => {
-        retval.push({id: 0, type: key, name: types[key].name});
+        retval.push({type: key, name: types[key].name, filter: 'N'});
     });
     return retval;
 }

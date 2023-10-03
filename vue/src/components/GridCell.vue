@@ -1,10 +1,9 @@
 <script lang="ts" setup>
+import type { Attribute, Member } from "../lib/types";
 const props = defineProps<{
-    attribute: object;
-    member: object;
+    attribute: Attribute;
+    member: Member;
 }>();
-//import { useDataStore } from '@/stores/data';
-//const data = useDataStore();
 
 function alignRight()
 {

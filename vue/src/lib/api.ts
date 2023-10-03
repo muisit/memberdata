@@ -1,5 +1,6 @@
-var controller = null;
+let controller:any = null;
 import { useDataStore } from '../stores/data';
+import type { APIResult, Member } from './types';
 
 export function abort_all_calls() {
     if(controller) {
@@ -9,11 +10,11 @@ export function abort_all_calls() {
 }
 
 function validateResponse() {
-    return res => {
+    return (res:Response) => {
         return res.json().then(json => {
             if (!json || !json.success) {
                 if (json && (json.data && json.data.error)) {
-                    throw new Error('Validation', {cause: json.data});
+                    throw new Error('API Validation');
                 }
                 else {
                     throw new Error("Network error, please try again");
@@ -24,33 +25,34 @@ function validateResponse() {
     };
 }
 
-function getFileNameFromContentDispostionHeader(header) {
-    var contentDispostion = header.split(';');
+function getFileNameFromContentDispostionHeader(header:string|null): string {
+    const contentDispostion = (header || '').split(';');
     const fileNameToken = `filename=`;
 
-    var fileName = 'downloaded.dat';
+    let fileName = 'downloaded.dat';
     contentDispostion.forEach((thisValue) => {
         if (thisValue.trim().indexOf(fileNameToken) === 0) {
             fileName = decodeURIComponent(thisValue.replace(fileNameToken, ''));
         }
     });
     return fileName;
-};
+}
 
 function attachmentResponse() {
-    return async res => {
+    return async (res:Response) => {
         const blob = await res.blob();
-        var filename = getFileNameFromContentDispostionHeader(res.headers.get('content-disposition'));
-        var mimetype = res.headers.get('content-type');
+        const filename = getFileNameFromContentDispostionHeader(res.headers.get('content-disposition'));
+        const mimetype = res.headers.get('content-type');
 
-        var newBlob = new Blob([blob], {type: mimetype});
-        if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-            window.navigator.msSaveOrOpenBlob(newBlob);
+        const newBlob = new Blob([blob], {type: mimetype || 'text/plain'});
+        // workaround for missing msSaveOrOpenBlob in type spec of Navigator
+        if (window.navigator && (window.navigator as any).msSaveOrOpenBlob) {
+            (window.navigator as any).msSaveOrOpenBlob(newBlob);
         }
         else {
             const objUrl = window.URL.createObjectURL(newBlob);
 
-            var link = document.createElement('a');
+            const link = document.createElement('a');
             link.href = objUrl;
             link.download = filename;
             link.click();
@@ -61,7 +63,7 @@ function attachmentResponse() {
     };
 }
 
-function validFetch(path, pdata, options, headers, responseHandler) {
+function validFetch(path:string, pdata:any, options:any, headers:any, responseHandler:Function): Promise<APIResult> {
     if(!controller) {
         controller = new AbortController();
     }
@@ -71,7 +73,7 @@ function validFetch(path, pdata, options, headers, responseHandler) {
 
     const dataStore = useDataStore();
 
-    const data = {
+    const data:any = {
         path: path,
         nonce: dataStore ? dataStore.nonce : ''
     };
@@ -87,7 +89,7 @@ function validFetch(path, pdata, options, headers, responseHandler) {
         body: JSON.stringify(data)
     });
 
-    return fetch(dataStore ? dataStore.baseUrl : '', fetchOptions)
+    return (fetch(dataStore ? dataStore.baseUrl : '', fetchOptions)
         .then(responseHandler())
         .catch(err => {
             if(err.name === "AbortError") {
@@ -96,40 +98,40 @@ function validFetch(path, pdata, options, headers, responseHandler) {
             else {
                 throw err;
             }
-        });
+        })) as Promise<APIResult>;
 }
 
-function fetchJson(path, data={}, options = {}, headers = {}) {
+function fetchJson(path:string, data={}, options = {}, headers = {}): Promise<APIResult> {
     return validFetch(path, data, options, headers, validateResponse);
 }
 
-function fetchAttachment(path, fname, data = {}, options = {}, headers = {}) {
+function fetchAttachment(path:string, data = {}, options = {}, headers = {}): Promise<APIResult> {
     headers = Object.assign({
         "Accept": "*",
     }, headers);
     return validFetch(path, data, options, headers, attachmentResponse);
 }
 
-export function getConfiguration() {
+export function getConfiguration(): Promise<APIResult> {
     return fetchJson('/configuration');
 }
 
-export function saveConfiguration(config) {
+export function saveConfiguration(config:any): Promise<APIResult> {
     return fetchJson('/configuration/save', config);
 }
 
-export function getData(offset, pagesize, filter, sorter, sortDirection, cutoff) {
+export function getData(offset:number, pagesize:number, filter:any, sorter:string, sortDirection:string, cutoff:number): Promise<APIResult> {
     return fetchJson('/data', {offset: offset, pagesize: pagesize, cutoff: cutoff, filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
-export function exportData(fname, filter, sorter, sortDirection) {
-    return fetchAttachment('/data/export', fname, {filter: filter, sorter: sorter, sortDirection: sortDirection});
+export function exportData(filter:any, sorter:string, sortDirection:string): Promise<APIResult> {
+    return fetchAttachment('/data/export', {filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
-export function saveAttribute(id, attribute, value) {
+export function saveAttribute(id: number, attribute:string, value:string): Promise<APIResult> {
     return fetchJson('/data/save', {id: id, attribute: attribute, value:value});
 }
-export function saveMember(member) {
+export function saveMember(member:Member): Promise<APIResult> {
     return fetchJson('/data/save', {member: member});
 }
-export function deleteMember(member) {
+export function deleteMember(member:Member): Promise<APIResult> {
     return fetchJson('/data/delete', {id: member.id});
 }

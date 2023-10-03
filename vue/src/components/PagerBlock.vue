@@ -6,24 +6,24 @@ const props = defineProps<{
 }>();
 const emits = defineEmits(['goTo']);
 
-function pages()
+function pages(): Array<number|string>
 {
     var retval = [];
     var pageCount = lastPage() + 1;
     if (pageCount < 10) {
-        for (var i = 0; i < pageCount; i++) {
-            retval.push(i);
+        for (var i0 = 0; i0 < pageCount; i0++) {
+            retval.push(i0);
         }
     }
     else {
         if (props.page < 5) {
-            for (var i = 0; i < props.page; i++) {
-                retval.push(i);
+            for (var i1 = 0; i1 < props.page; i1++) {
+                retval.push(i1);
             }
         }
         else {
             retval.push(0);
-            retval.push(null); // mark separation
+            retval.push('...'); // mark separation
             retval.push(props.page - 3);
             retval.push(props.page - 2);
             retval.push(props.page - 1);
@@ -31,15 +31,15 @@ function pages()
         retval.push(props.page);
 
         if ((lastPage() - props.page) < 5) {
-            for (var i = props.page + 1; i <= lastPage(); i++) {
-                retval.push(i);
+            for (var i2 = props.page + 1; i2 <= lastPage(); i2++) {
+                retval.push(i2);
             }
         }
         else {
             retval.push(props.page + 1);
             retval.push(props.page + 2);
             retval.push(props.page + 3);
-            retval.push(null); // mark separation
+            retval.push('...'); // mark separation
             retval.push(lastPage());
         }
     }
@@ -93,9 +93,9 @@ import { DArrowLeft, ArrowLeft, ArrowRight, DArrowRight } from '@element-plus/ic
                 'page-button': true,
                 'page-number': true,
                 'active': props.page == pageNum,
-                'separator': pageNum === null
+                'separator': pageNum === '...'
         }">
-            <span>{{ pageNum === null ? '...' : pageNum }}</span>
+            <span>{{ pageNum }}</span>
         </div>
 
         <div :class="{'page-button': true, 'disabled': props.page == lastPage()}" @click="goToNext()">

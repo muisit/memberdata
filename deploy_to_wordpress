@@ -5,6 +5,7 @@ source  .env
 RELEASE="1"
 MAJOR="0"
 MINOR="0"
+MICRO="0"
 NOGIT="0"
 
 while [ $# -gt 0 ]
@@ -102,21 +103,31 @@ cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > t
 mv tmp.$$ "$PROJECT.php"
 cat "$PROJECT.php" |  sed "s/\(define.*VERSION[^\"]*\"\)[^\"]*\(\".*\)/\1${MAJ}.${MIN}.${MICR}\2/"  > tmp.$$
 mv tmp.$$ "$PROJECT.php"
+
+pushd vue > /dev/null
 cat "package.json" | sed "s/\(.*\"version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
 mv tmp.$$ "package.json"
-mg create tag "${MAJ}.${MIN}.${MICR}" -m "auto tagged commit"
+popd > /dev/null
 
 # perform a production build before we deploy
-cd vue
+pushd vue > /dev/null
 npm run build
+STAT=$?
+popd > /dev/null
+
+if [ ! "x$STAT" = "x0" ]
+then
+    exit 1
+fi
 
 mkdir -p $WPDIR/trunk
-
 cp -r -v *.php LICENSE readme.txt controllers lib models vendor dist $WPDIR/trunk
 
-cd /tmp
+pushd /tmp > /dev/null
 cp -darpv $WPDIR /tmp/$PROJECT
 zip -r $PROJECT $PROJECT
 mv $PROJECT.zip $WPDIR
 rm -rf /tmp/$PROJECT
+popd > /dev/null
 
+mg create tag "${MAJ}.${MIN}.${MICR}" -m "auto tagged commit"

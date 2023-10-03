@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { FilterSpecByKey, Attribute } from '../lib/types';
 const props = defineProps<{
     sorter: string;
     sortdir: string;
@@ -24,7 +25,7 @@ function toggleSorter(sortval: string)
     }
 }
 
-import { type FilterSpecByKey, useDataStore } from '../stores/data';
+import { useDataStore } from '@/stores/data';
 const data = useDataStore();
 
 function onFilter(settings: object)
@@ -36,7 +37,7 @@ function isFiltered(attribute:Attribute)
 {
     return props.filter[attribute.name] 
         && (
-            (props.filter[attribute.name].search && props.filter[attribute.name].search.trim().length)
+            (props.filter[attribute.name].search && props.filter[attribute.name].search?.trim().length)
             || (props.filter[attribute.name].values.length)
         );
 }

@@ -3,12 +3,12 @@ import './assets/admin.scss'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import Admin from './Admin.vue'
+import Admin from './AdminApp.vue'
 
-var el = document.getElementById('memberdata-admin');
-var props = {};
+const el = document.getElementById('memberdata-admin');
+let props = {};
 if (el) {
-    var data = el.getAttribute('data-memberdata');
+    const data = el.getAttribute('data-memberdata');
     if (data) {
         props = JSON.parse(data);
     }

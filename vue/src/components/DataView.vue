@@ -7,7 +7,7 @@ const props = defineProps<{
 }>();
 
 import { useDataStore } from '../stores/data';
-import type { FilterSpecByKey } from '../stores/data';
+import type { FilterSpecByKey } from '../lib/types';
 const data = useDataStore();
 
 const currentpage = ref(0);
@@ -55,11 +55,9 @@ var nonewfilter = '';
 
 watch(
     () => [pagesize.value, filter.value, sorter.value, sortdir.value, currentpage.value],
-    (nw) => {
-        console.log('filter change');
+    () => {
         // if we do not have the whole list, use server side sorting and paging
         if (!hasWholeList()) {
-            console.log('does not have whole new list');
             var newtoken = random_token();
             nonewfilter = newtoken;
             window.setTimeout(() => {
@@ -123,14 +121,14 @@ function exportSheet()
     );
 }
 
-import Pager from './Pager.vue';
+import PagerBlock from './PagerBlock.vue';
 import MemberGrid from './MemberGrid.vue';
 import { ElButton, ElSelect, ElOption } from 'element-plus';
 </script>
 <template>
     <div class="container">
         <div class="grid-actions">
-            <Pager :count="data.dataCount" :page="currentpage" :pagesize="parseInt(pagesize)" @go-to="switchPage" />
+            <PagerBlock :count="data.dataCount" :page="currentpage" :pagesize="parseInt(pagesize)" @go-to="switchPage" />
             <ElSelect v-model="pagesize" v-if="shouldDisplayPager()">
                 <ElOption value="10" label="10"/>
                 <ElOption value="25" label="25" v-if="data.dataCount > 25"/>
@@ -139,7 +137,7 @@ import { ElButton, ElSelect, ElOption } from 'element-plus';
                 <ElOption value="250" label="250" v-if="data.dataCount > 250"/>
                 <ElOption value="0" label="All" v-if="data.dataCount < 500"/>
             </ElSelect>
-            <ElButton type="secondary" @click="exportSheet">Export</ElButton>
+            <ElButton type="default" @click="exportSheet">Export</ElButton>
             <ElButton type="primary" @click="addRow">Add</ElButton>
         </div>
         <MemberGrid

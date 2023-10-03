@@ -1,15 +1,11 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { Attribute, Member } from '../stores/data';
+import type { Attribute, Member } from '../lib/types';
 const props = defineProps<{
     attribute:Attribute;
     member: Member;
     errors: Array<string>;
 }>();
 const emits = defineEmits(['onUpdate']);
-
-import { useDataStore } from '../stores/data';
-const data = useDataStore();
 
 function update(value:string)
 {
@@ -38,9 +34,9 @@ function showSelectInput()
 
 function listSelectOptions()
 {
-    var options = [];
+    var options:any = [];
     if (props.attribute.type == 'enum') {
-        props.attribute.options.split('|').forEach((val) => {
+        props.attribute.options.split('|').forEach((val:string) => {
             options.push({label: val, value: val});
         });
     }

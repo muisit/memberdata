@@ -4,6 +4,7 @@ const props = defineProps<{
     index:string
 }>();
 
+import type  {FieldDefinition, Attribute } from '../lib/types';
 import { useDataStore } from '../stores/data';
 const data = useDataStore();
 
@@ -20,7 +21,7 @@ watch(
     {immediate: true}
 )
 
-function onUpdate(attribute, field)
+function onUpdate(attribute:Attribute, field:FieldDefinition)
 {
     switch (field.field) {
         case 'name':
@@ -46,7 +47,7 @@ function saveAll()
 
 function add() {
     var type = data.types["text"];
-    data.addAttribute({id: 0, name: '', type: 'text', rules: type.rules, options: type.optdefault});
+    data.addAttribute({name: '', type: 'text', rules: type.rules, options: type.optdefault, filter: 'N'});
     disableButton.value = false;
 }
 

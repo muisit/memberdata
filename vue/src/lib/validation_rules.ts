@@ -1,4 +1,4 @@
-import type {Attribute, Member} from '@/stores/data';
+import type {Attribute} from '@/lib/types';
 import validator from 'validator';
 import { dayjs } from 'element-plus';
 import { convertDateToDayJSFormat } from './functions';
@@ -10,28 +10,28 @@ interface RuleValidationResult {
 
 export function validateAttribute(attribute:Attribute, value:string): Array<string>
 {
-    var rules = (attribute.rules || '').split('|');
-    var foundSkip = false;
-    var messages:Array<string> = rules.map((rule) => {
+    const rules = (attribute.rules || '').split('|');
+    let foundSkip = false;
+    const messages:Array<string|null> = rules.map((rule:string) => {
         if (rule == 'skip') {
             foundSkip = true;
         }
-        var result = validateRule(rule, attribute, value, rules)
+        const result = validateRule(rule, attribute, value, rules)
         value = result.value;
         if (result.message) {
             return result.message;
         }
         return null;
     })
-    .filter((msg) => msg !== null);
-    return foundSkip ? [] : messages;
+    .filter((msg:string|null) => msg !== null);
+    return foundSkip ? [] : messages as Array<string>;
 }
 
 function validateRule(rule:string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult
 {
-    var elements = rule.split('=', 2);
+    const elements = rule.split('=', 2);
     if (ruleImplementations[elements[0]]) {
-        var ruleName = elements[0];
+        let ruleName = elements[0];
         if (ruleName == 'max') ruleName = 'lte';
         if (ruleName == 'min') ruleName = 'gte';
         return ruleImplementations[ruleName](elements[1] || '', attribute, value, rules);
@@ -42,27 +42,27 @@ function validateRule(rule:string, attribute:Attribute, value:string, rules:Arra
 
 function comparisonFunc(params: string, attribute:Attribute, value:string, rules:Array<string>, callback:Function): RuleValidationResult {
     if (attribute.type == 'int' || rules.includes('int')) {
-        var limit = parseInt(params);
-        var val = parseInt(value);
+        const limit = parseInt(params);
+        const val = parseInt(value);
         return callback(attribute, 'value', val, limit);
     }
     else if (attribute.type == 'number' || rules.includes('float')) {
-        var limit = parseFloat(params);
-        var val = parseFloat(value);
+        const limit = parseFloat(params);
+        const val = parseFloat(value);
         if (!isNaN(limit) && !isNaN(val)) {
             return callback(attribute, 'value', val, limit);
         }
     }
     else if(['date','datetime'].includes(attribute.type) || rules.includes('date') || rules.includes('datetime')) {
-        var dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
-        var dt2 = dayjs(params, convertDateToDayJSFormat(attribute.options));
+        const dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
+        const dt2 = dayjs(params, convertDateToDayJSFormat(attribute.options));
         if (dt.isValid() && dt2.isValid()) {
             return callback(attribute, 'date', dt, dt2);
         }
     }
     else {
-        var limit = parseInt(params);
-        var val = value.length;
+        const limit = parseInt(params);
+        const val = value.length;
         return callback(attribute, 'length', val, limit);
     }
     return {value: value};
@@ -73,7 +73,7 @@ interface RuleImplementationObject {
 }
 const ruleImplementations:RuleImplementationObject = {
     "required": function (params: string, attribute:Attribute, value:string): RuleValidationResult {
-        if ((typeof value == undefined) || !value || value.length == 0) {
+        if (value.length == 0) {
             return {value: value, message: attribute.name + ' is a required field'};
         }
         return {value: value};
@@ -100,28 +100,28 @@ const ruleImplementations:RuleImplementationObject = {
         return {value: value};
     },
     'date': function (params: string, attribute:Attribute, value:string): RuleValidationResult {
-        var dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
+        const dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
         if (!dt.isValid()) {
             return {value: value, message: attribute.name + ' is not a valid date'};
         }
         return {value: value};
     },
     'datetime': function (params: string, attribute:Attribute, value:string): RuleValidationResult {
-        var dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
+        const dt = dayjs(value, convertDateToDayJSFormat(attribute.options));
         if (!dt.isValid()) {
             return {value: value, message: attribute.name + ' is not a valid date + time'};
         }
         return {value: value};
     },
     'enum': function (params: string, attribute:Attribute, value:string): RuleValidationResult {
-        var options = (attribute.options || '').split('|')
+        const options = (attribute.options || '').split('|')
         if (!options.includes(value)) {
             return {value: value, message: attribute.name + ' must be one of the allowed values'};
         }
         return {value: value};
     },
     'lte': function (params: string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult {
-        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|Object, limit: number|Object) => {
+        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|any, limit: number|any) => {
             switch (tp) {
                 case 'value':
                     if (val > limit) {
@@ -143,7 +143,7 @@ const ruleImplementations:RuleImplementationObject = {
         });
     },
     'lt': function (params: string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult {
-        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|Object, limit: number|Object) => {
+        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|any, limit: number|any) => {
             switch (tp) {
                 case 'value':
                     if (val >= limit) {
@@ -165,7 +165,7 @@ const ruleImplementations:RuleImplementationObject = {
         });
     },
     'eq': function (params: string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult {
-        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|Object, limit: number|Object) => {
+        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|any, limit: number|any) => {
             switch (tp) {
                 case 'value':
                     if (val == limit) {
@@ -187,7 +187,7 @@ const ruleImplementations:RuleImplementationObject = {
         });
     },
     'gt': function (params: string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult {
-        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|Object, limit: number|Object) => {
+        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|any, limit: number|any) => {
             switch (tp) {
                 case 'value':
                     if (val <= limit) {
@@ -209,7 +209,7 @@ const ruleImplementations:RuleImplementationObject = {
         });
     },
     'gte': function (params: string, attribute:Attribute, value:string, rules:Array<string>): RuleValidationResult {
-        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|Object, limit: number|Object) => {
+        return comparisonFunc(params, attribute, value, rules, (attribute:Attribute, tp: string, val: number|any, limit: number|any) => {
             switch (tp) {
                 case 'value':
                     if (val < limit) {

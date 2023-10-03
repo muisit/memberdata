@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
-import type { Attribute, FilterSpec } from '@/stores/data';
+import type { Attribute, FilterSpec } from '@/lib/types';
 import { random_token } from '../lib/functions';
 const props = defineProps<{
     attribute:Attribute;
@@ -28,7 +28,7 @@ function toggleFilter(filterValue: string|null)
 {
     var shouldCheck = !isChecked(filterValue);
     var newfilter:FilterSpec = Object.assign({search: null, values: []}, props.filter || {});
-    newfilter.values = newfilter.values.filter((value) => filterValue !== value);
+    newfilter.values = newfilter.values.filter((value:string|null) => filterValue !== value);
 
     if (shouldCheck) {
         newfilter.values.push(filterValue);

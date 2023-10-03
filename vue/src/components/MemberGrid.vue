@@ -11,7 +11,7 @@ const props = defineProps<{
 const emits = defineEmits(['onDelete', 'updateSorter', 'updateFilter']);
 
 import { useDataStore } from '../stores/data';
-import type { FilterSpecByKey, Member } from '../stores/data';
+import type { FilterSpecByKey, Member } from '../lib/types';
 const data = useDataStore();
 
 const updateDialogVisible = ref(false);

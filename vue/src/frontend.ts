@@ -2,12 +2,12 @@ import './assets/frontend.scss'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import Frontend from './Frontend.vue'
+import Frontend from './FrontendApp.vue'
 
-var el = document.getElementById('memberdata-fe');
-var props = {};
+const el = document.getElementById('memberdata-fe');
+let props = {};
 if (el) {
-    var data = el.getAttribute('data-memberdata');
+    const data = el.getAttribute('data-memberdata');
     if (data) {
         props = JSON.parse(data);
     }

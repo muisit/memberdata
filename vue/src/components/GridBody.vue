@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Member } from '../stores/data';
+import type { Member } from '../lib/types';
 const props = defineProps<{
     dataList: Array<Member>;
 }>();
@@ -13,8 +13,8 @@ import GridRow from './GridRow.vue';
             v-for="member in props.dataList"
             :key="member.id"
             :member="member"
-            @on-delete="$emit('onDelete', member)"
-            @on-edit="$emit('onEdit', member)"
+            @on-delete="emits('onDelete', member)"
+            @on-edit="emits('onEdit', member)"
         />
     </tbody>    
 </template>

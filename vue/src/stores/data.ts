@@ -5,40 +5,10 @@ import {
     getConfiguration as getConfigurationAPI, saveConfiguration as saveConfigurationAPI,
     getData as getDataAPI, saveAttribute as saveAttributeAPI, saveMember as saveMemberAPI, deleteMember as deleteMemberAPI,
     exportData as exportDataAPI
-} from '../lib/api.js';
+} from '../lib/api';
 import { sort_members } from '../lib/sort_members';
 import { filter_members } from '../lib/filter_members.js';
-
-export interface Attribute {
-    name: string;
-    type: string;
-    rules?: string;
-    options?: any;
-    optdefault?: any;
-    filter: string;
-}
-
-export interface Member {
-    id: number;
-    [key:string]: string|number;
-}
-
-export interface AttributeByKey {
-    [key:string]: Attribute;
-}
-
-export interface FilterByKey {
-    [key:string]: Array<string|null>;
-}
-
-export interface FilterSpec {
-    search: string|null;
-    values: Array<string|null>;
-}
-
-export interface FilterSpecByKey {
-    [key:string]: FilterSpec;
-}
+import type { Attribute, Member, FilterOptionsByAttribute, AttributeByKey, FilterSpecByKey, APIResult } from '../lib/types';
 
 export const useDataStore = defineStore('data', () => {
     const nonce = ref('');
@@ -48,7 +18,7 @@ export const useDataStore = defineStore('data', () => {
     const dataList:Ref<Array<Member>> = ref([]);
     const originalData:Ref<Array<Member>> = ref([]);
     const dataCount = ref(0);
-    const dataFilters:Ref<FilterByKey> = ref({});
+    const dataFilters:Ref<FilterOptionsByAttribute> = ref({});
 
     function getConfiguration()
     {
@@ -61,7 +31,7 @@ export const useDataStore = defineStore('data', () => {
                 throw new Error("invalid return data");
             }
         })
-        .catch((e) => {
+        .catch((e:any) => {
             console.log(e);
             alert('There was a network error, please reload the page');
         });
@@ -69,9 +39,9 @@ export const useDataStore = defineStore('data', () => {
 
     function saveConfiguration()
     {
-        var toSaveObject:Array<Attribute> = [];
-        var allowedTypes = Object.keys(types.value);
-        var attributeNames:Array<string> = [];
+        const toSaveObject:Array<Attribute> = [];
+        const allowedTypes = Object.keys(types.value);
+        const attributeNames:Array<string> = [];
         configuration.value.forEach((attribute:Attribute) => {
             if (attribute.name && attribute.name.length > 0 && attribute.type) {
                 if (allowedTypes.includes(attribute.type) && !attributeNames.includes(attribute.name)) {
@@ -88,7 +58,7 @@ export const useDataStore = defineStore('data', () => {
         configuration.value = toSaveObject;
 
         return saveConfigurationAPI(toSaveObject)
-            .catch((e) => {
+            .catch((e:any) => {
                 console.log(e);
                 alert("There was an error storing the data, please reload the page and try again");
             });
@@ -101,7 +71,7 @@ export const useDataStore = defineStore('data', () => {
 
     function updateAttribute(data:Attribute)
     {
-        var newConfig = configuration.value.map((attribute) => {
+        const newConfig = configuration.value.map((attribute) => {
             if (attribute.name == data.name) {
                 return data;
             }
@@ -112,9 +82,9 @@ export const useDataStore = defineStore('data', () => {
 
     function hasEmptyFilter(filter:FilterSpecByKey)
     {
-        var retval = true;
+        let retval = true;
         Object.keys(filter).forEach((name) => {
-            var search = (filter[name].search || '').trim();
+            const search = (filter[name].search || '').trim();
             if (search.length > 0 || filter[name].values.length) {
                 retval = false;
             }
@@ -141,7 +111,7 @@ export const useDataStore = defineStore('data', () => {
                     throw new Error("Invalid data returned");
                 }
             })
-            .catch((e) => {
+            .catch((e:any) => {
                 console.log(e);
                 alert("There was an error retrieving data. Please reload the page");
             });
@@ -149,13 +119,13 @@ export const useDataStore = defineStore('data', () => {
 
     function exportData(filter:FilterSpecByKey, sorter:string, sortDirection: string)
     {
-        return exportDataAPI("export.xslx", filter, sorter, sortDirection);
+        return exportDataAPI(filter, sorter, sortDirection);
     }
 
     function saveMember(member:Member)
     {
         return saveMemberAPI(member)
-            .then((data:any) => {
+            .then((data:APIResult) => {
                 if (data.data && data.data.messages) {
                     return data.data.messages;
                 }
@@ -163,10 +133,10 @@ export const useDataStore = defineStore('data', () => {
             });
     }
 
-    function saveAttribute(id:number, attribute:string, value:string)
+    function saveAttribute(id: number, attribute:string, value:string)
     {
         return saveAttributeAPI(id, attribute, value)
-            .catch((e) => {
+            .catch((e:any) => {
                 console.log(e);
                 alert('There was an error saving the data for attribute ' + attribute + ". Please reload and try again");
             });
@@ -174,7 +144,7 @@ export const useDataStore = defineStore('data', () => {
 
     function addNewMember()
     {
-        var newId = -1;
+        let newId = -1;
         originalData.value.forEach((member) => {
             if (member.id <= newId) {
                 newId = member.id - 1;
@@ -182,9 +152,9 @@ export const useDataStore = defineStore('data', () => {
         });
         originalData.value.push({id: newId});
         saveAttribute(newId, '', '')
-            .then((data) => {
+            .then((data:APIResult|void) => {
                 if (data && data.data && data.data.id) {
-                    var newList = originalData.value.map((member) => {
+                    const newList = originalData.value.map((member) => {
                         if (member.id == newId) {
                             member.id = data.data.id;
                             dataCount.value += 1; // succesfully added a new member
@@ -209,13 +179,13 @@ export const useDataStore = defineStore('data', () => {
     function deleteMember(member:Member)
     {
         return deleteMemberAPI(member)
-            .then((data:any) => {
+            .then((data:APIResult) => {
                 if (data.data && data.success) {
                     originalData.value = originalData.value.filter((item) => item.id != member.id);
                     dataCount.value -= 1;
                 }
             })
-            .catch((e) => {
+            .catch((e:any) => {
                 console.log(e);
                 alert("There was a network problem while deleting this entry. Please reload the page and try again");
             });
@@ -223,14 +193,13 @@ export const useDataStore = defineStore('data', () => {
 
     function applyPagerSorterFilter(offset:number, pagesize:number, filter:FilterSpecByKey, sorter:string, sortdir: string)
     {
-        var attr:Attribute = { name: 'id', type: 'int', filter: 'N'};
+        let attr:Attribute = { name: 'id', type: 'int', filter: 'N'};
         configuration.value.forEach((a) => {
             if (a.name == sorter) {
                 attr = a;
             }
         });
 
-        console.log('converting originalData list containing ',originalData.value.length,'entries to filtered and sorted list');
         dataList.value = originalData.value
             .slice()
             .sort((m1: Member, m2:Member) => sort_members(m1, m2, sorter, sortdir, attr))
