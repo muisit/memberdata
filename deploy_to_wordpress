@@ -124,7 +124,7 @@ mkdir -p $WPDIR/trunk
 cp -r -v *.php LICENSE readme.txt controllers lib models vendor dist $WPDIR/trunk
 
 pushd /tmp > /dev/null
-cp -darpv $WPDIR /tmp/$PROJECT
+cp -darpv $WPDIR/trunk /tmp/$PROJECT
 zip -r $PROJECT $PROJECT
 mv $PROJECT.zip $WPDIR
 rm -rf /tmp/$PROJECT

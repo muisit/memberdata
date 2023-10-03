@@ -1,6 +1,6 @@
 <?php
 
-namespace WPElo\Models;
+namespace MemberData\Models;
 
 class Migration0001 extends MigrationObject
 {
