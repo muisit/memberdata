@@ -118,10 +118,9 @@ class Validator
 
     public function validateRule(&$value, $ruleelements)
     {
-        error_log('validating rule ' . json_encode($ruleelements));
         $rule = $ruleelements['rule'];
         // always pass if we have an empty value and this is not the required rule
-        if ($rule != 'required' && empty($value)) {
+        if ($rule != 'required' && $this->valueFailsRequired($value)) {
             return true;
         }
 
@@ -137,14 +136,19 @@ class Validator
         return false;
     }
 
+    private function valueFailsRequired($value)
+    {
+        return empty($value) && $value !== 0 && $value !== false && $value !== '';
+    }
+
     private function requiredRule(&$value, $ruleelements)
     {
-        $retval = !(empty($value) && $value !== false);
-        if ($retval === false) {
+        $retval = $this->valueFailsRequired($value);
+        if ($retval) { // if it fails the required rule
             $msg = isset($ruleelements['message']) ? $ruleelements['message'] : "{label} is a required field";
             $this->addError($msg, $ruleelements);
         }
-        return $retval;
+        return !$retval; // return true if it does not fail the rule
     }
 
     private function nullableRule(&$value, $ruleelements)

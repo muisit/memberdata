@@ -86,6 +86,24 @@ class Member extends Base
         return array_values($resultsById);
     }
 
+    public function distinctValues($attribute, $restrictCount = false)
+    {
+        // select only on the valid entries
+        $qb = $this->select(['eva.value', 'count(*) as cnt'])
+            ->withEva($attribute)
+            ->where('softdeleted', null)
+            ->groupBy('eva.value')
+            ->orderBy('cnt', 'desc')
+            ->orderBy('eva.value');
+
+        if ($restrictCount) {
+            $qb->having('cnt > 1');
+        }
+
+        $values = $qb->get();
+        return array_column($values, 'value');
+    }
+
     public function save()
     {
         $user = wp_get_current_user();
@@ -95,6 +113,7 @@ class Member extends Base
         else  {
             $this->modifier = -1;
         }
+        $this->modified = strftime('%F %T');
         return parent::save();
     }
 

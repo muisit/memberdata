@@ -168,6 +168,7 @@ class Base
             else {
                 $wpdb->update($wpdb->base_prefix . $this->table, $fieldstosave, array($this->pk => $this->{$this->pk}));
             }
+            $this->_state = "loaded";
         }
         // save attached objects
         $this->postSave();
@@ -286,6 +287,11 @@ class Base
     public function select($p = '*')
     {
         return $this->query()->select($p);
+    }
+
+    public function count()
+    {
+        return $this->query()->count();
     }
 
     public function find($id = null, $clause = null)

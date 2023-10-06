@@ -42,7 +42,6 @@ class Configuration extends Base
 
     public function save($data)
     {
-        error_log("saving data " . json_encode($data));
         $this->authenticate();
         $config = $this->getConfig();
 
@@ -60,6 +59,7 @@ class Configuration extends Base
 
     private function getConfig()
     {
+        // only return our own configuration, not that of plugins
         $config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
         if (empty($config)) {
             $config = [];
@@ -70,7 +70,6 @@ class Configuration extends Base
 
     private function sanitizeConfiguration($config)
     {
-        error_log("sanitizing configuration");
         $types = \apply_filters(Display::PACKAGENAME . '_attribute_types', []);
 
         $retval = [];

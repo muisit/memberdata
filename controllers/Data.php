@@ -40,34 +40,20 @@ class Data extends Base
     public function index($data)
     {
         $this->authenticate();
-        $offset = isset($data['model']['offset']) ? intval($data['model']['offset']) : 0;
-        $pagesize = isset($data['model']['pagesize']) ? intval($data['model']['pagesize']) : 1;
-        $filter = isset($data['model']['filter']) ? $data['model']['filter'] : null;
-        $sorter = isset($data['model']['sorter']) ? $data['model']['sorter'] : null;
-        $sortDirection = isset($data['model']['sortDirection']) ? $data['model']['sortDirection'] : null;
-        $cutoff = isset($data['model']['cutoff']) ? intval($data['model']['cutoff']) : 100;
+        $settings = [
+            "offset" => $data['model']['offset'] ?? 0,
+            "pagesize" => $data["model"]['pagesize'] ?? 25,
+            "filter" => $data['model']['filter'] ?? null,
+            "sorter" => $data['model']['sorter'] ?? null,
+            "sortDirection" => $data['model']['sortDirection'] ?? 'asc',
+            "cutoff" => $data["model"]['cutoff'] ?? 100
+        ];
 
-        $memberModel = new Member();
-        $qb = $memberModel->select($memberModel->tableName() . '.id');
-        $qb = $this->combineWithEva($qb, $filter, $sorter);
-        $count = $this->addFilter($qb, $filter)->count();
-
-        $this->joinAliases = [];
-        $qb = $memberModel->select($memberModel->tableName() . '.id');
-        $qb = $this->combineWithEva($qb, $filter, $sorter);
-        $qb = $this->addSorter($qb, $memberModel, $sorter, $sortDirection);
-        $qb = $this->addFilter($qb, $filter);
-
-        // use cutoff to determine if we can return the whole set, or just a page
-        if ($count > $cutoff && $pagesize > 0 && $offset >= 0) {
-            $qb->offset($offset)->limit($pagesize);
-        }
-
-        $results = $memberModel->collectAttributes($qb->get());
+        $result = \apply_filters(Display::PACKAGENAME . '_find_members', $settings);
 
         return [
-            'total' => $count,
-            'list' => $results,
+            'total' => $result['count'],
+            'list' => $result['list'],
             'filters' => $this->determineFilters()
         ];
     }
@@ -75,17 +61,13 @@ class Data extends Base
     public function export($data)
     {
         $this->authenticate();
-        $filter = isset($data['model']['filter']) ? $data['model']['filter'] : null;
-        $sorter = isset($data['model']['sorter']) ? $data['model']['sorter'] : null;
-        $sortDirection = isset($data['model']['sortDirection']) ? $data['model']['sortDirection'] : null;
+        $settings = [
+            "filter" => $data['model']['filter'] ?? null,
+            "sorter" => $data['model']['sorter'] ?? null,
+            "sortDirection" => $data['model']['sortDirection'] ?? 'asc'
+        ];
 
-        $memberModel = new Member();
-        $qb = $memberModel->select($memberModel->tableName() . '.id');
-        $qb = $this->combineWithEva($qb, $filter, $sorter);
-        $qb = $this->addSorter($qb, $memberModel, $sorter, $sortDirection);
-        $qb = $this->addFilter($qb, $filter);
-
-        $results = $memberModel->collectAttributes($qb->get());
+        $result = \apply_filters(Display::PACKAGENAME . '_find_members', $settings);
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -98,7 +80,7 @@ class Data extends Base
         }
 
         $j += 1;
-        foreach ($results as $result) {
+        foreach ($result['list'] as $result) {
             $i = 1;
             $sheet->setCellValueByColumnAndRow($i++, $j, $result['id']);
             foreach ($config as $attribute) {
@@ -115,86 +97,6 @@ class Data extends Base
         exit(0);
     }
 
-    private function addFilter(QueryBuilder $qb, array $filter)
-    {
-        $config = $this->getConfig();
-        foreach ($config as $attribute) {
-            $aname = $attribute['name'];
-            if (isset($filter[$aname])) {
-                $search = $filter[$aname]["search"];
-                if ($search == null) {
-                    $search = '';
-                }
-                $search = strtolower(trim($search));
-
-                if (strlen($search) || count($filter[$aname]["values"]) > 0) {
-                    $alias = $this->joinAliases[$aname];
-                    $sub = $qb->sub();
-
-                    if (strlen($search)) {
-                        $sub->orWhere('LOWER(' . $alias . '.value)', 'like', '%' . $search . '%');
-                    }
-
-                    foreach ($filter[$aname]["values"] as $filtervar) {
-                        if ($filtervar === null) {
-                            $sub->orWhere($alias . '.value', null);
-                        }
-                        else {
-                            $sub->orWhere($alias . '.value', $filtervar);
-                        }
-                    }
-                    $qb->where($sub->get());
-                }
-            }
-        }
-        if (!isset($filter['withTrashed'])) {
-            $qb->where('softdeleted', null);
-        }
-        return $qb;
-    }
-
-    private function addSorter(QueryBuilder $qb, $memberModel, $sorter, $sortDirection)
-    {
-        if (!empty($sorter)) {
-            $dir = 'asc';
-            if (in_array($sortDirection, ['asc', 'desc'])) {
-                $dir = $sortDirection;
-            }
-            if ($sorter != 'id') {
-                $qb->orderBy('eva.value IS NULL', 'asc')->orderBy('eva.value', $dir);
-            }
-            else {
-                $qb->orderBy($memberModel->tableName() . '.id', $dir);
-            }
-        }
-        return $qb;
-    }
-
-    private function combineWithEva(QueryBuilder $qb, $filter, $sorter)
-    {
-        if (!empty($sorter) && $sorter != 'id') {
-            $qb->withEva($sorter, 'eva');
-        }
-
-        if (!empty($filter)) {
-            $config = $this->getConfig();
-            foreach ($config as $attribute) {
-                $aname = $attribute['name'];
-                if (isset($filter[$aname]) && count($filter[$aname])) {
-                    $alias = "al" . count($this->joinAliases);
-                    if ($aname == $sorter) {
-                        $alias = 'eva';
-                    }
-                    else {
-                        $qb->withEva($aname, strtolower($alias));
-                    }
-                    $this->joinAliases[$aname] = $alias;
-                }
-            }
-        }
-        return $qb;
-    }
-
     private function determineFilters()
     {
         $filters = array();
@@ -202,14 +104,7 @@ class Data extends Base
         $memberModel = new Member();
         foreach ($config as $attribute) {
             if (isset($attribute['filter']) && $attribute['filter'] == 'Y') {
-                $values = $memberModel->select(['eva.value', 'count(*) as cnt'])
-                    ->withEva($attribute['name'])
-                    ->groupBy('eva.value')
-                    ->having('cnt > 1')
-                    ->orderBy('cnt', 'desc')
-                    ->orderBy('eva.value')
-                    ->get();
-                $filters[$attribute['name']] = array_map(fn($a) => $a->value, $values);
+                $filters[$attribute['name']] = $memberModel->distinctValues($attribute['name']);
             }
         }
         return $filters;
@@ -245,60 +140,46 @@ class Data extends Base
         $memberModel->load();
 
         $config = $this->getConfig();
-        $attributesByName = [];
-        foreach ($config as $attr) {
-            $attributesByName[$attr['name']] = $attr;
-        }
 
         if (empty($memberData) && !empty($attribute)) {
-            error_log("saving single attribute '$attribute' with '$value'");
-            $attributes = [$attribute];
+            // save a single attribute
             $memberData = [$attribute => $value];
         }
         else if (!empty($memberData)) {
-            error_log("saving whole member model " . json_encode($memberData));
-            $attributes = array_keys($attributesByName);
-        }
-
-        if (!$memberModel->isNew()) {
-            error_log("membermodel is not new");
-            $messages = [];
-            foreach ($attributes as $attribute) {
-                error_log("testing attribute $attribute");
-                if (isset($attributesByName[$attribute])) {
-                    error_log("in allowed list");
-                    $eva = $memberModel->getEVA($attribute);
-                    $eva->value = $memberData[$attribute];
-                    error_log("validating field '$eva->value' vs " . $attributesByName[$attribute]["rules"]);
-                    if (($msg = $eva->validateField($attributesByName[$attribute]["rules"], $attribute)) == null) {
-                        $eva->save();
-                    }
-                    else {
-                        $messages[] = $msg;
-                    }
+            // save a whole model of attributes
+            // copy all supported attributes, drop the rest
+            // do not overwrite attributes that we support but
+            // have no value.
+            $newData = [];
+            foreach ($config as $attribute) {
+                $attrname = $attribute['name'] ?? '';
+                // special test on null value, allow it
+                if (isset($memberData[$attrname]) || $memberData[$attrname] === null) {
+                    $newData[$attrname] = $memberData[$attrname];
                 }
             }
-            return ["messages" => $messages];
+            $memberData = $newData;
         }
-        elseif (empty($attributes)) {
-            error_log("saving new model");
-            $memberModel->setKey(0);
-            $memberModel->save();
-            error_log("new id is " . $memberModel->getKey());
+
+        if (!$memberModel->isNew() && !empty($memberData)) {
+            $settings = [
+                'member' => $memberModel,
+                'attributes' => $memberData,
+                'messages' => [],
+                'config' => $config
+            ];
+            $settings = \apply_filters(Display::PACKAGENAME . '_save_attributes', $settings);
+            return ["messages" => $settings['messages']];
+        }
+        elseif ($memberModel->isNew() && empty($memberData)) {
+            $memberModel = \apply_filters(Display::PACKAGENAME . '_save_member', $memberModel);
             return $memberModel->export();
         }
         return false;
     }
 
-    private $_config = null;
     private function getConfig()
     {
-        if (empty($this->_config)) {
-            $this->_config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
-            if (empty($this->_config)) {
-                $this->_config = [];
-            }
-        }
-        return $this->_config;
+        return \apply_filters(Display::PACKAGENAME . '_configuration', []);
     }
 }

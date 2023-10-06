@@ -28,7 +28,7 @@ namespace MemberData\Models;
 
 class Migration
 {
-    private const CONFIG = "metadata_migrations";
+    public $config = "";
 
     public $fields = array("id", "name", "status");
     public $rules = array(
@@ -37,20 +37,18 @@ class Migration
         "status" => "int"
     );
 
-    public function __construct($data = null)
+    public function __construct($name)
     {
-        foreach ($this->fields as $field) {
-            $this->{$field} = isset($data[$field]) ? $data[$field] : null;
-        }
+        $this->config = $name;
     }
 
-    private function scanAllMigrations()
+    private function scanAllMigrations($dir)
     {
         // load all the migration objects from the migrations subfolder
-        $objects = scandir(dirname(__FILE__) . '/migrations');
+        $objects = scandir($dir . '/migrations');
         $fileObjects = [];
         foreach ($objects as $filename) {
-            $path = dirname(__FILE__) . "/migrations/" . $filename;
+            $path = $dir . "/migrations/" . $filename;
 
             if ($filename != '.' && $filename != '..' && is_file($path)) {
                 $model = $this->loadClassFile($path);
@@ -62,16 +60,16 @@ class Migration
         return $fileObjects;
     }
 
-    public function activate()
+    public function activate($dir)
     {
         // get the wordpress options field
-        $migrations = json_decode(get_option(self::CONFIG));
+        $migrations = json_decode(get_option($this->config), true);
         if (empty($migrations)) {
             $migrations = [];
-            add_option(self::CONFIG, json_encode($migrations));
+            add_option($this->config, json_encode($migrations));
         }
 
-        $fileObjects = $this->scanAllMigrations();
+        $fileObjects = $this->scanAllMigrations($dir);
 
         foreach ($fileObjects as $name => $model) {
             $wasRun = isset($migrations[$model->name]) ? true : false;
@@ -85,19 +83,19 @@ class Migration
                 $migrations[$model->name] = date('Y-m-d H:i:s');
             }
         }
-        update_option(self::CONFIG, json_encode($migrations));
+        update_option($this->config, json_encode($migrations));
     }
 
-    public function uninstall()
+    public function uninstall($dir)
     {
         // get the wordpress options field
-        $migrations = json_decode(get_option(self::CONFIG));
+        $migrations = json_decode(get_option($this->config));
         if (empty($migrations)) {
             $migrations = [];
-            add_option(self::CONFIG, json_encode($migrations));
+            add_option($this->config, json_encode($migrations));
         }
 
-        $fileObjects = $this->scanAllMigrations();
+        $fileObjects = $this->scanAllMigrations($dir);
         foreach ($fileObjects as $name => $date) {
             $wasRun = isset($migrations[$model->name]) ? true : false;
             if ($wasRun) {
@@ -111,7 +109,7 @@ class Migration
                 unset($migrations[$model->name]);
             }
         }
-        update_option(self::CONFIG, json_encode($migrations));
+        update_option($this->config, json_encode($migrations));
     }
 
     private function loadClassFile($filename)

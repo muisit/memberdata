@@ -43,6 +43,7 @@ class QueryBuilder
     private $_havingclause = array();
     private $_limit = null;
     private $_offset = null;
+    private $_clause_parent_relation = null;
 
     public function __construct($model, $issub = false)
     {
@@ -60,6 +61,20 @@ class QueryBuilder
     public function sub()
     {
         $qb = new QueryBuilder($this, true);
+        return $qb;
+    }
+
+    public function orSub()
+    {
+        $qb = new QueryBuilder($this, true);
+        $qb->_clause_parent_relation = 'OR';
+        return $qb;
+    }
+
+    public function andSub()
+    {
+        $qb = new QueryBuilder($this, true);
+        $qb->_clause_parent_relation = 'AND';
         return $qb;
     }
 
@@ -231,7 +246,7 @@ class QueryBuilder
     {
         $sql = "";
 
-        // allow SELECT in case of exists() clause
+        // allow SELECT in case of exists(SELECT .. ) or '.. in (SELECT ..)'  clause
         if (!empty($this->_from)) {
             $sql = "SELECT "
                 . implode(',', array_keys($this->_select_fields))
@@ -246,9 +261,20 @@ class QueryBuilder
         // in case of complicated subclauses, support group by and having
         $sql .= $this->buildClause("groupby");
         $sql .= $this->buildClause("having");
+
+        if (get_class($this->_model) != static::class) {
+            throw new \Exception("Invalid model class in QueryBuilder subroutine");
+        }
         // model is a QueryBuilder
         $this->_model->_where_values = array_merge($this->_model->_where_values, $this->_where_values);
-        return '(' . $sql . ')';
+
+        if (in_array($this->_clause_parent_relation, ['AND', 'OR'])) {
+            $this->_model->enactWhere('(' . $sql . ')', null, null, $this->_clause_parent_relation);
+            return $this->_model; // allow chaining on the parent builder
+        }
+        else {
+            return '(' . $sql . ')';
+        }
     }
 
     public function reselect($f = null)
@@ -346,29 +372,35 @@ class QueryBuilder
     private function enactWhere($field, $comparison, $clause, $andor = "AND")
     {
         if (strtolower($comparison) == "in") {
+            // where(field, 'in', <array>)
             if (is_array($clause)) {
-                $clause = "'" . implode("','", $clause) . "'";
+                $clause = "('" . implode("','", $clause) . "')";
             }
+            // where(field, 'in', <cselect clause>)
             elseif (is_callable($clause)) {
                 $qb = $this->sub();
                 ($clause)($qb);
                 $clause = $qb->get();
             }
-            $this->_where_clauses[] = array($andor, "$field IN ($clause)");
+            // clause is surrounded by brackets
+            $this->_where_clauses[] = array($andor, "$field IN $clause");
         }
         elseif (strtolower($comparison) == "exists") {
+            // where(<clause>, 'exists')
             if (is_callable($field)) {
                 $qb = $this->sub();
                 ($field)($qb);
                 $sql = $qb->get();
-                $this->_where_clauses[] = array($andor, "exists(" . $sql . ")");
+                // sql is surrounded with brackets
+                $this->_where_clauses[] = array($andor, "exists" . $sql);
             }
         }
         elseif (is_callable($field)) {
+            // where(<subclause>)
             $qb = $this->sub();
             ($field)($qb);
             $sql = $qb->get();
-            $this->_where_clauses[] = array($andor, "(" . $sql . ")");
+            $this->_where_clauses[] = array($andor, $sql);
         }
         else {
             if ($clause === null) {
@@ -376,6 +408,7 @@ class QueryBuilder
                 // see if the query contains a space or a = sign. 
                 if (strpbrk($field, " =") !== false) {
                     // field is a subquery, this is ->where(<subquery>)
+                    // we assume the subquery has brackets and if it does not, there to be a reason for that
                     $this->_where_clauses[] = array($andor, $field);
                 }
                 elseif ($comparison == "<>") {
@@ -387,6 +420,7 @@ class QueryBuilder
                 }
             }
             else {
+                // regular where(field, <comparison>, value)
                 $id = $this->getUniqWhereId();
                 $this->_where_values[$id] = $clause;
                 $this->_where_clauses[] = array($andor, $field . ' ' . $comparison . ' {' . $id . '}');
@@ -509,6 +543,9 @@ class QueryBuilder
             array_unshift($arguments, $this);
             error_log("calling user func array with arguments " . json_encode($arguments));
             return call_user_func_array([$this->_model, $method], $arguments);
+        }
+        else {
+            throw new \Exception("calling undefined method $method on QueryBuilder or model");
         }
         return $this;
     }

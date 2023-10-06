@@ -42,7 +42,7 @@ class Activator
         register_activation_hook($plugin, fn() => self::activate());
         register_deactivation_hook($plugin, fn() => self::deactivate());
         register_uninstall_hook($plugin, "memberdata_uninstall_hook");
-        add_action('upgrader_process_complete', fn() => self::upgrade, 10, 2);
+        add_action('upgrader_process_complete', fn($ob, $op) => self::upgrade($ob, $op), 10, 2);
         add_action('plugins_loaded', fn() => self::update());
     }
 
@@ -61,8 +61,8 @@ class Activator
 
     public static function uninstall()
     {
-        $model = new Migration();
-        $model->uninstall();
+        $model = new Migration(MEMBERDATA_PACKAGENAME . '_migrations');
+        $model->uninstall(realpath(__DIR__ . '/../models'));
     }
 
     private static function upgrade($upgrader_object, $options)
@@ -83,8 +83,8 @@ class Activator
         if (get_option(self::CONFIG) == "new") {
             // this loads all database migrations from file and executes
             // all those that are not yet marked as migrated
-            $model = new Migration();
-            $model->activate();
+            $model = new Migration(MEMBERDATA_PACKAGENAME . '_migrations');
+            $model->activate(realpath(__DIR__ . '/../models'));
             update_option(self::CONFIG, strftime('%F %T'));
         }
     }
