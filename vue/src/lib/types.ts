@@ -17,8 +17,14 @@ export interface FilterSpec {
     values: Array<string|null>;
 }
 
+export interface Sheet {
+    id: number;
+    name: string;
+}
+
 export interface Member {
     id: number;
+    sheet_id: number;
     [key:string]: string|number;
 }
 
@@ -37,4 +43,14 @@ export interface FilterSpecByKey {
 export interface APIResult {
     success?: boolean;
     data?: any;
+}
+
+export interface SelectionSettings {
+    offset: number;
+    pagesize: number;
+    sorter: string;
+    sortDirection: string;
+    filter: FilterSpecByKey;
+    cutoff: number;
+    callback: Function|null;
 }

@@ -1,14 +1,15 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Ref } from 'vue';
 import { defineStore } from 'pinia'
 import {
     getConfiguration as getConfigurationAPI, saveConfiguration as saveConfigurationAPI,
-    getData as getDataAPI, saveAttribute as saveAttributeAPI, saveMember as saveMemberAPI, deleteMember as deleteMemberAPI,
-    exportData as exportDataAPI
+    getData as getDataAPI, addMember as addMemberAPI, updateMember as updateMemberAPI, deleteMember as deleteMemberAPI,
+    exportData as exportDataAPI, getSheets as getSheetsAPI
 } from '../lib/api';
+import { is_valid } from '@/lib/functions';
 import { sort_members } from '../lib/sort_members';
 import { filter_members } from '../lib/filter_members.js';
-import type { Attribute, Member, FilterOptionsByAttribute, AttributeByKey, FilterSpecByKey, APIResult } from '../lib/types';
+import type { Attribute, Sheet, Member, FilterOptionsByAttribute, AttributeByKey, FilterSpecByKey, APIResult, SelectionSettings } from '../lib/types';
 
 export const useDataStore = defineStore('data', () => {
     const nonce = ref('');
@@ -19,10 +20,48 @@ export const useDataStore = defineStore('data', () => {
     const originalData:Ref<Array<Member>> = ref([]);
     const dataCount = ref(0);
     const dataFilters:Ref<FilterOptionsByAttribute> = ref({});
+    const currentSheet:Ref<Sheet> = ref({id: 0, name:''});
+    const sheets:Ref<Array<Sheet>> = ref([]);
+    const currentSelection:Ref<SelectionSettings> = ref({});
 
-    function getConfiguration()
+    watch(
+        () => currentSheet.value,
+        (nw) => {
+            getConfiguration(nw.id);
+        }
+    )
+
+
+    function getSheets()
     {
-        return getConfigurationAPI().then((data:any) => {
+        return getSheetsAPI()
+            .then((data:APIResult) => {
+                if (data.data && data.data.list) {
+                    sheets.value = data.data.list;
+                }
+            })
+            .catch((e) => {
+                console.log(e);
+                alert('There was a network error, please reload the page');
+            });
+    }
+
+    function pickSheet(id:number)
+    {
+        currentSheet.value = {id:0, name: ''};
+        sheets.value.forEach((s) => {
+            if (s.id == id) {
+                currentSheet.value = s;
+            }
+        });
+        if (!is_valid(currentSheet.value.id) && sheets.value.length > 0) {
+            currentSheet.value = sheets.value[0];
+        }
+    }
+
+    function getConfiguration(id:number|null = null)
+    {
+        return getConfigurationAPI(id || currentSheet.value.id).then((data:any) => {
             if (data.data) {
                 types.value = data.data.types;
                 configuration.value = data.data.attributes;
@@ -37,12 +76,12 @@ export const useDataStore = defineStore('data', () => {
         });
     }
 
-    function saveConfiguration()
+    function saveConfiguration(config:Array<Attribute>)
     {
         const toSaveObject:Array<Attribute> = [];
         const allowedTypes = Object.keys(types.value);
         const attributeNames:Array<string> = [];
-        configuration.value.forEach((attribute:Attribute) => {
+        config.forEach((attribute:Attribute) => {
             if (attribute.name && attribute.name.length > 0 && attribute.type) {
                 if (allowedTypes.includes(attribute.type) && !attributeNames.includes(attribute.name)) {
                     toSaveObject.push({
@@ -55,29 +94,16 @@ export const useDataStore = defineStore('data', () => {
                 }
             }
         });
-        configuration.value = toSaveObject;
 
-        return saveConfigurationAPI(toSaveObject)
+        return saveConfigurationAPI(currentSheet.value.id, toSaveObject)
+            .then(() => {
+                // reload the full configuration for this sheet
+                getConfiguration();
+            })
             .catch((e:any) => {
                 console.log(e);
                 alert("There was an error storing the data, please reload the page and try again");
             });
-    }
-
-    function addAttribute(data:Attribute)
-    {
-        configuration.value.push(data);
-    }
-
-    function updateAttribute(data:Attribute)
-    {
-        const newConfig = configuration.value.map((attribute) => {
-            if (attribute.name == data.name) {
-                return data;
-            }
-            return attribute;
-        });
-        configuration.value = newConfig;
     }
 
     function hasEmptyFilter(filter:FilterSpecByKey)
@@ -92,17 +118,31 @@ export const useDataStore = defineStore('data', () => {
         return retval;
     }
 
-    function getData(offset:number, pagesize:number, filter:FilterSpecByKey, sorter:string, sortDirection: string, cutoff: number, cb:Function|null = null)
-    {      
-        return getDataAPI(offset, pagesize, filter, sorter, sortDirection, cutoff)
+    function regetData()
+    {
+        return getDataAPI(
+            currentSheet.value.id,
+            currentSelection.value.offset,
+            currentSelection.value.pagesize,
+            currentSelection.value.filter,
+            currentSelection.value.sorter,
+            currentSelection.value.sortDirection,
+            currentSelection.value.cutoff)
             .then((data:any) => {
                 // if we have data and the callback indicates our filter/sorting is still applicable, make the changes
                 if (data.data) {
-                    if (!cb || cb()) {
-                        dataCount.value = parseInt(data.data.total);
+                    if (!currentSelection.value.callback || currentSelection.value.callback()) {
                         dataList.value = data.data.list;
-                        if (hasEmptyFilter(filter)) {
-                            originalData.value = data.data.list;
+                        dataCount.value = parseInt(data.data.total);
+                        originalData.value = []; // reset this to prevent hasWholeList returning true
+
+                        // check that we are not filtering, in which case our local list may be too small
+                        // if we are filtering 'back-side', assume we never filter front-side anymore
+                        // No filters, no offset and the returned list is smaller than our cutoff
+                        if (hasEmptyFilter(currentSelection.value.filter)
+                           && dataCount.value < currentSelection.value.cutoff
+                           && currentSelection.value.offset == 0) {
+                            originalData.value = data.data.list; // copy in case we apply local paging/filtering
                         }
                     }
                     dataFilters.value = data.data.filters || {};
@@ -117,14 +157,34 @@ export const useDataStore = defineStore('data', () => {
             });
     }
 
-    function exportData(filter:FilterSpecByKey, sorter:string, sortDirection: string)
+    function getData(offset:number, pagesize:number, filter:FilterSpecByKey, sorter:string, sortDirection: string, cutoff: number, cb:Function|null = null)
     {
-        return exportDataAPI(filter, sorter, sortDirection);
+        currentSelection.value = {
+            offset: offset,
+            pagesize: pagesize,
+            filter: filter,
+            sorter: sorter,
+            sortDirection: sortDirection,
+            cutoff: cutoff,
+            callback: cb
+        };
+        return regetData();
     }
 
-    function saveMember(member:Member)
+    function hasWholeList()
     {
-        return saveMemberAPI(member)
+        return originalData.value.length > 0 && originalData.value.length == dataCount.value;
+    }
+    
+
+    function exportData(filter:FilterSpecByKey, sorter:string, sortDirection: string)
+    {
+        return exportDataAPI(currentSheet.value.id, filter, sorter, sortDirection);
+    }
+
+    function updateMember(member:Member)
+    {
+        return updateMemberAPI(member)
             .then((data:APIResult) => {
                 if (data.data && data.data.messages) {
                     return data.data.messages;
@@ -133,56 +193,23 @@ export const useDataStore = defineStore('data', () => {
             });
     }
 
-    function saveAttribute(id: number, attribute:string, value:string)
+    function addMember()
     {
-        return saveAttributeAPI(id, attribute, value)
-            .catch((e:any) => {
-                console.log(e);
-                alert('There was an error saving the data for attribute ' + attribute + ". Please reload and try again");
-            });
-    }
-
-    function addNewMember()
-    {
-        let newId = -1;
-        originalData.value.forEach((member) => {
-            if (member.id <= newId) {
-                newId = member.id - 1;
-            }
-        });
-        originalData.value.push({id: newId});
-        saveAttribute(newId, '', '')
+        addMemberAPI(currentSheet.value.id)
             .then((data:APIResult|void) => {
                 if (data && data.data && data.data.id) {
-                    const newList = originalData.value.map((member) => {
-                        if (member.id == newId) {
-                            member.id = data.data.id;
-                            dataCount.value += 1; // succesfully added a new member
-                        }
-                        return member;
-                    });
-                    originalData.value = newList;
+                    regetData();
                 }
             });
     }
 
-    function updateMember(member:Member)
-    {
-        originalData.value = originalData.value.map((m) => {
-            if (m.id == member.id) {
-                return member;
-            }
-            return m;
-        });        
-    }
 
     function deleteMember(member:Member)
     {
         return deleteMemberAPI(member)
             .then((data:APIResult) => {
                 if (data.data && data.success) {
-                    originalData.value = originalData.value.filter((item) => item.id != member.id);
-                    dataCount.value -= 1;
+                    regetData();
                 }
             })
             .catch((e:any) => {
@@ -208,11 +235,11 @@ export const useDataStore = defineStore('data', () => {
 
     return {
         nonce, baseUrl,
-        configuration, types,
-        getConfiguration, saveConfiguration, addAttribute, updateAttribute,
+        configuration, types, currentSheet, sheets,
+        getSheets, pickSheet, getConfiguration, saveConfiguration,
 
-        dataCount, dataList, originalData, dataFilters,
-        getData, exportData, saveAttribute, saveMember, addNewMember, updateMember, deleteMember,
+        dataCount, dataList, dataFilters,
+        getData, hasWholeList, exportData, addMember, updateMember, deleteMember,
         applyPagerSorterFilter
     }
 })

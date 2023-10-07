@@ -28,18 +28,20 @@ The plugin defines the following filters and actions on which to interface:
    an `options` type field determining the type entry field for the options and an `optdefault` setting to fill the 
    `options` with a default if no value is given. If no `options` are provided, the `options` are not available for
    entry in the front-end.
-- `memberdata_configuration($configuration)`: this assembles an array of attributes. The order of the array determines
-   the display order in the front end interface. Each entry has a `name`, a `type`, an optional `rules` list filled with
-   the default settings of the type and a `filter` boolean value ('Y' or 'N') indicating if this attribute ca be used
-   to filter in the front end display.
+- `memberdata_configuration($configuration)`: this assembles an array of attributes for a specific sheet. The order of 
+   the array determines the display order in the front end interface. Each entry has a `name`, a `type`, an optional 
+   `rules` list filled with the default settings of the type and a `filter` boolean value ('Y' or 'N') indicating if 
+   this attribute can be used to filter in the front end display.
+   The configuration consists of a dictionary with a `sheet` ID and a `configuration` array, which will hold the result.
 - `memberdata_find_members(array $settings)`: this filter assembles a list of members and their attribute values. Hook into
    this to add new attributes or adjust existing attributes. The core assembly is done at priority `500`.
    The `$settings` array can contain fields for `offset` and `pagesize` (`0` or `null` means no paging), `sorter` 
    (attribute name) and `sortDirection` (`asc` or `desc`), a `filter` object (dictionary containing objects with a 
    `search` entry for free-text-search, and/or a `values` entry containing a list of specific values to filter on, and/or
-   a value 'withTrashed' indicating the soft-deleted members should be searched as well), 
-   a `cutoff` value indicating at which count paging can be disregarded, a `list` value containing the found members (merge
-   with this list) and a `count` value containing the total count of all available members.
+   a value 'trashed' indicating the soft-deleted members should be searched as well), a `cutoff` value indicating at 
+   which count paging can be disregarded, a `list` value containing the found members (merge with this list) and a `count`
+   value containing the total count of all available members.
+   Also provide the `sheet` ID to determine the sheet to find members in.
 - `memberdata_save_member(Member: $member)`: this is called when a client wants to add a new member. Hook into
    this to create dependent structures for new members. The basic creation of the new member is done at priority `500`,
    any filter before that can adjust the member model to be saved, any filter after that can use the newly saved model
@@ -48,7 +50,23 @@ The plugin defines the following filters and actions on which to interface:
    The settings array consists of `member` (Member model), `attributes` (dictionary of attribute->value), `messages`
    (array of validation messages) and `config` (array of supported attributes, as returned by `memberdata_configuration`, optional)
 - `memberdata_values($settings)`: filter to retrieve a set of unique values for a specific attribute field. The `settings`
-   array contains an entry `field` to indicate the attribute name and an entry `values` which contains the result list.
+   array contains a `sheet` ID, an entry `field` to indicate the attribute name and an entry `values` which contains the 
+   result list.
+- `memberdata_find_sheets($results)`: retrieve all available sheets. The return value is the results parameter.
+- `memberdata_save_sheet($settings)`: validate and save a sheet. The settings is a dictionary containing a `sheet` model that
+   is validated and a `messages` array that contains any error messages. This filter runs at priority `500`, before that,
+   the model is not saved or updated (`id` may not be valid).
+
+## Examples
+`add_action('memberdata_loaded', function () { /* perform dependent plugin initialisations */})`
+`$types = \apply_filters('memberdata_attribute_types', []);`
+`$configuration = \apply_filters('memberdata_configuration', ['sheet' => $sheetId, 'configuration' => []])['configuration'] ?? [];`
+`$members = \apply_filters('memberdata_find_members', ['list' => [], 'sheet' => $sheetId', 'sorter' => 'Name', 'sortDirection' => 'asc', 'offset' => 0, 'pagesize' => 20, 'filter' => ['Name' => ['search' => 'Pete']]])['list'] ?? [];`
+`\apply_filters('memberdata_save_member', $member);`
+`\apply_filter('memberdata_save_attributes', ['member' => $member. 'attributes' => ['Name' => 'Pete'], 'messages' => []]);`
+`$filterValues = \apply_filters('memberdata_values', ['sheet' => $sheetId, 'field' => 'Name', 'values' => []])['values'] ?? [];`
+`$sheets = \apply_filters('memberdata_find_sheets', []);`
+`\apply_filters('memberdata_save_sheet', ['sheet' => $sheetModel, 'messages' => []]);`
 
 ## Validation
 

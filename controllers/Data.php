@@ -28,6 +28,7 @@ namespace MemberData\Controllers;
 
 use MemberData\Models\Member;
 use MemberData\Models\Eva;
+use MemberData\Models\Sheet;
 use MemberData\Lib\Display;
 use MemberData\Models\QueryBuilder;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -41,6 +42,7 @@ class Data extends Base
     {
         $this->authenticate();
         $settings = [
+            "sheet" => $data['model']['sheet'] ?? 0,
             "offset" => $data['model']['offset'] ?? 0,
             "pagesize" => $data["model"]['pagesize'] ?? 25,
             "filter" => $data['model']['filter'] ?? null,
@@ -54,7 +56,7 @@ class Data extends Base
         return [
             'total' => $result['count'],
             'list' => $result['list'],
-            'filters' => $this->determineFilters()
+            'filters' => $this->determineFilters($settings['sheet'])
         ];
     }
 
@@ -62,6 +64,7 @@ class Data extends Base
     {
         $this->authenticate();
         $settings = [
+            "sheet" => $data['model']['sheet'] ?? 0,
             "filter" => $data['model']['filter'] ?? null,
             "sorter" => $data['model']['sorter'] ?? null,
             "sortDirection" => $data['model']['sortDirection'] ?? 'asc'
@@ -72,7 +75,7 @@ class Data extends Base
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $config = $this->getConfig();
+        $config = $this->getConfig($settings['sheet']);
         $i = 1;
         $j = 1;
         foreach ($config as $attribute) {
@@ -97,14 +100,22 @@ class Data extends Base
         exit(0);
     }
 
-    private function determineFilters()
+    private function determineFilters($sheet)
     {
         $filters = array();
-        $config = $this->getConfig();
+        $config = $this->getConfig($sheet);
         $memberModel = new Member();
         foreach ($config as $attribute) {
             if (isset($attribute['filter']) && $attribute['filter'] == 'Y') {
-                $filters[$attribute['name']] = $memberModel->distinctValues($attribute['name']);
+                $values = \apply_filters(
+                    Display::PACKAGENAME . '_values',
+                    [
+                        'values' => [],
+                        'sheet' => intval($sheet),
+                        'field' => $attribute['name']
+                    ]
+                );
+                $filters[$attribute['name']] = $values['values'];
             }
         }
         return $filters;
@@ -124,28 +135,17 @@ class Data extends Base
         return true;
     }
 
-    public function save($data)
+    public function saveMember($data)
     {
         $this->authenticate();
-
-        $memberId = isset($data['model']['id']) ? $data['model']['id'] : 0;
-        $attribute = isset($data['model']['attribute']) ? $data['model']['attribute'] : '';
-        $value = isset($data['model']['value']) ? $data['model']['value'] : '';
         $memberData = isset($data['model']['member']) ? $data['model']['member'] : null;
-
-        if (empty($memberId) && !empty($memberData) && isset($memberData['id'])) {
-            $memberId = $memberData['id'];
-        }
-        $memberModel = new Member($memberId);
+        $memberModel = new Member($memberData['id'] ?? null);
         $memberModel->load();
 
-        $config = $this->getConfig();
+        $sheetId = $memberModel->sheet_id;
+        $config = $this->getConfig($sheetId);
 
-        if (empty($memberData) && !empty($attribute)) {
-            // save a single attribute
-            $memberData = [$attribute => $value];
-        }
-        else if (!empty($memberData)) {
+        if (!memberModel->isNew() && !empty($memberData)) {
             // save a whole model of attributes
             // copy all supported attributes, drop the rest
             // do not overwrite attributes that we support but
@@ -159,9 +159,7 @@ class Data extends Base
                 }
             }
             $memberData = $newData;
-        }
 
-        if (!$memberModel->isNew() && !empty($memberData)) {
             $settings = [
                 'member' => $memberModel,
                 'attributes' => $memberData,
@@ -171,15 +169,22 @@ class Data extends Base
             $settings = \apply_filters(Display::PACKAGENAME . '_save_attributes', $settings);
             return ["messages" => $settings['messages']];
         }
-        elseif ($memberModel->isNew() && empty($memberData)) {
+        return false;
+    }
+
+    public function addMember($data)
+    {
+        $this->authenticate();
+        $sheetId = $data['model']['sheet'] ?? null;
+        $sheet = new Sheet($sheetId);
+        if (!$sheet->isNew()) {
+            $config = $this->getConfig($sheetId);
+
+            $memberModel = new Member();
+            $memberModel->sheet_id = $sheet->getKey();
             $memberModel = \apply_filters(Display::PACKAGENAME . '_save_member', $memberModel);
             return $memberModel->export();
         }
         return false;
-    }
-
-    private function getConfig()
-    {
-        return \apply_filters(Display::PACKAGENAME . '_configuration', []);
     }
 }

@@ -12,12 +12,13 @@ class MemberRetrieveService
 
     public static function countMembers($settings)
     {
+        $sheet = intval($settings['sheet'] ?? 0);
         $filter = $settings['filter'] ?? null;
         $sorter = $settings['sorter'] ?? null;
 
         $memberModel = new Member();
         self::$joinAliases = [];
-        $qb = $memberModel->select($memberModel->tableName() . '.id');
+        $qb = $memberModel->select($memberModel->tableName() . '.id')->where('sheet_id', $sheet);
         $qb = self::combineWithEva($qb, $filter, $sorter);
         if (!empty($filter)) {
             $count = self::addFilter($qb, $filter);
@@ -29,6 +30,7 @@ class MemberRetrieveService
 
     public static function retrieveMembers($settings)
     {
+        $sheet = intval($settings['sheet'] ?? 0);
         $offset = intval($settings['offset'] ?? 0);
         $pagesize = intval($settings['pagesize'] ?? 0);
         $filter = $settings['filter'] ?? null;
@@ -39,7 +41,7 @@ class MemberRetrieveService
 
         $memberModel = new Member();
         self::$joinAliases = [];
-        $qb = $memberModel->select($memberModel->tableName() . '.id');
+        $qb = $memberModel->select($memberModel->tableName() . '.id')->where('sheet_id', $sheet);
         $qb = self::combineWithEva($qb, $filter, $sorter);
         $qb = self::addSorter($qb, $memberModel, $sorter, $sortDirection);
         if (!empty($filter)) {

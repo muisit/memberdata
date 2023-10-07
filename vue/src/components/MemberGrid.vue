@@ -15,7 +15,7 @@ import type { FilterSpecByKey, Member } from '../lib/types';
 const data = useDataStore();
 
 const updateDialogVisible = ref(false);
-const selectedMember:Ref<Member> = ref({id:0});
+const selectedMember:Ref<Member> = ref({id:0, sheet_id: 0});
 function onEdit(member:Member)
 {
     updateDialogVisible.value = true;
@@ -38,12 +38,12 @@ function onDelete(member:Member)
 function closeUpdate()
 {
     updateDialogVisible.value = false;
-    selectedMember.value = {id:0};
+    selectedMember.value = {id:0, sheet_id: 0};
 }
 
 function saveUpdate()
 {
-    data.saveMember(selectedMember.value)
+    data.updateMember(selectedMember.value)
         .then((result:any) => {
             if (result && result.length) {
                 alert("There were back-end validation issues. Data was not completely saved.\r\n" + result.join('\r\n'));
@@ -51,7 +51,7 @@ function saveUpdate()
             else {
                 updateDialogVisible.value = false;
                 data.updateMember(selectedMember.value);
-                selectedMember.value = {id:0};
+                selectedMember.value = {id:0, sheet_id: 0};
             }
         });
 }

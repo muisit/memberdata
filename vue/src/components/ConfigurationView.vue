@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
+import type { Ref } from 'vue';
+import { getBasicConfiguration } from '@/lib/api';
 const props = defineProps<{
     index:string
 }>();
@@ -7,13 +9,17 @@ const props = defineProps<{
 import type  {FieldDefinition, Attribute } from '../lib/types';
 import { useDataStore } from '../stores/data';
 const data = useDataStore();
+const basicConfiguration:Ref<Array<Attribute>> = ref([]);
 
 const disableButton = ref(true);
 watch(
-    () => props.index,
+    () => [props.index, data.currentSheet],
     (nw) => {
-        if (nw == 'settings') {
-            data.getConfiguration().then(() => {
+        if (nw[0] == 'settings') {
+            getBasicConfiguration(data.currentSheet.id).then((data) => {
+                if (data.data) {
+                    basicConfiguration.value = data.data.attributes;
+                }
                 disableButton.value = true;
             });
         }
@@ -33,13 +39,12 @@ function onUpdate(attribute:Attribute, field:FieldDefinition)
             break;
     }
     disableButton.value = false;
-    data.updateAttribute(attribute);
 }
 
 function saveAll()
 {
     disableButton.value = true;
-    data.saveConfiguration()
+    data.saveConfiguration(basicConfiguration.value)
         .then(() => {
             alert("Configuration updated succesfully");
         });
@@ -47,7 +52,7 @@ function saveAll()
 
 function add() {
     var type = data.types["text"];
-    data.addAttribute({name: '', type: 'text', rules: type.rules, options: type.optdefault, filter: 'N'});
+    basicConfiguration.value.push({name: '', type: 'text', rules: type.rules, options: type.optdefault, filter: 'N'});
     disableButton.value = false;
 }
 
@@ -65,33 +70,35 @@ import { QuestionFilled } from '@element-plus/icons-vue';
 import draggable from 'vuedraggable';
 </script>
 <template>
-    <div class="configuration-header">
-        <ElIcon size="large" @click="() => showRulesDialog = true">
-            <QuestionFilled/>
-        </ElIcon>
-        <RulesInfoDialog :visible="showRulesDialog" @on-close="() => showRulesDialog = false"/>
-    </div>
     <div class="configuration-view">
-        <draggable
-            v-model="data.configuration" 
-            handle=".attribute-handle"
-            @start="dragStart" 
-            item-key="id">
-            <template #item="{element}">
-                <AttributeConfiguration
-                :attribute="element"
-                @on-update="(field) => onUpdate(element, field)" />
-            </template>
-
-            <template #header>
-                <div class="add-button">
-                    <ElButton @click="add">Add Attribute</ElButton>
-                </div>
-            </template>
-        </draggable>
-
-        <div class="save-button">
-            <ElButton @click="saveAll" type='primary' :disabled="disableButton">Save</ElButton>
+        <div class="configuration-header">
+            <ElIcon size="large" @click="() => showRulesDialog = true">
+                <QuestionFilled/>
+            </ElIcon>
+            <RulesInfoDialog :visible="showRulesDialog" @on-close="() => showRulesDialog = false"/>
         </div>
-    </div> 
+        <div class="configuration-view">
+            <draggable
+                v-model="basicConfiguration" 
+                handle=".attribute-handle"
+                @start="dragStart" 
+                item-key="id">
+                <template #item="{element}">
+                    <AttributeConfiguration
+                    :attribute="element"
+                    @on-update="(field) => onUpdate(element, field)" />
+                </template>
+
+                <template #header>
+                    <div class="add-button">
+                        <ElButton @click="add">Add Attribute</ElButton>
+                    </div>
+                </template>
+            </draggable>
+
+            <div class="save-button">
+                <ElButton @click="saveAll" type='primary' :disabled="disableButton">Save</ElButton>
+            </div>
+        </div> 
+    </div>
 </template>

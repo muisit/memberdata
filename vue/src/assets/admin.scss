@@ -2,6 +2,26 @@
 
 #memberdata-admin {
 
+    .main-header {
+        position: relative;
+
+        .subheader {
+            font-size: x-large;
+            font-style: italic;
+            padding-bottom: 20px;
+        }
+
+        .action-buttons {
+            position: absolute;
+            right: 10px;
+            top: 0px;
+
+            button {
+                margin-left: 10px;
+            }
+        }
+    }
+
     .el-tabs {
         height: 100%;
 

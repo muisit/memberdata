@@ -28,16 +28,21 @@ namespace MemberData\Lib;
 
 use MemberData\Controllers\Configuration;
 use MemberData\Controllers\Data;
+use MemberData\Controllers\Sheets;
 
 class API
 {
     protected $routes = [
         'configuration.post' => [Configuration::class, 'index'],
+        'configuration.basic.post' => [Configuration::class, 'basic'],
         'configuration.save.post' => [Configuration::class, 'save'],
         'data.post' => [Data::class, 'index'],
-        'data.save.post' => [Data::class, 'save'],
+        'data.update.post' => [Data::class, 'saveMember'],
+        'data.add.post' => [Data::class, 'addMember'],
         'data.delete.post' => [Data::class, 'delete'],
-        'data.export.post' => [Data::class, 'export']
+        'data.export.post' => [Data::class, 'export'],
+        'sheets.post' => [Sheets::class, 'index'],
+        'sheets.save.post' => [Sheets::class, 'save'],
     ];
 
     public function resolve()

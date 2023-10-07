@@ -65,6 +65,20 @@ class MigrationObject
         return $wpdb->get_var($query) == $columnname;
     }
 
+    public function addColumn($tablename, $columnname, $spec)
+    {
+        global $wpdb;
+        $table_name = $this->tableName($tablename);
+        return $wpdb->query("ALTER TABLE `$table_name` ADD `$columnname` $spec;");
+    }
+
+    public function dropColumn($tablename, $columnname)
+    {
+        global $wpdb;
+        $table_name = $this->tableName($tablename);
+        return $wpdb->query("ALTER TABLE `$table_name` DROP COLUMN `$columnname`;");
+    }
+
     public function createTable($tablename, $content)
     {
         global $wpdb;

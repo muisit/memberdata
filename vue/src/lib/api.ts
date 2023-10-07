@@ -1,6 +1,6 @@
 let controller:any = null;
 import { useDataStore } from '../stores/data';
-import type { APIResult, Member } from './types';
+import type { APIResult, Member, Sheet } from './types';
 
 export function abort_all_calls() {
     if(controller) {
@@ -112,26 +112,34 @@ function fetchAttachment(path:string, data = {}, options = {}, headers = {}): Pr
     return validFetch(path, data, options, headers, attachmentResponse);
 }
 
-export function getConfiguration(): Promise<APIResult> {
-    return fetchJson('/configuration');
+export function getConfiguration(sheet: number): Promise<APIResult> {
+    return fetchJson('/configuration', {sheet: sheet});
+}
+export function getBasicConfiguration(sheet: number): Promise<APIResult> {
+    return fetchJson('/configuration/basic', {sheet: sheet});
+}
+export function saveConfiguration(sheet:number, config:any): Promise<APIResult> {
+    return fetchJson('/configuration/save', {sheet: sheet, settings: config});
 }
 
-export function saveConfiguration(config:any): Promise<APIResult> {
-    return fetchJson('/configuration/save', config);
+export function getData(sheet: number, offset:number, pagesize:number, filter:any, sorter:string, sortDirection:string, cutoff:number): Promise<APIResult> {
+    return fetchJson('/data', {sheet: sheet, offset: offset, pagesize: pagesize, cutoff: cutoff, filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
-
-export function getData(offset:number, pagesize:number, filter:any, sorter:string, sortDirection:string, cutoff:number): Promise<APIResult> {
-    return fetchJson('/data', {offset: offset, pagesize: pagesize, cutoff: cutoff, filter: filter, sorter: sorter, sortDirection: sortDirection});
+export function exportData(sheet: number, filter:any, sorter:string, sortDirection:string): Promise<APIResult> {
+    return fetchAttachment('/data/export', {sheet: sheet, filter: filter, sorter: sorter, sortDirection: sortDirection});
 }
-export function exportData(filter:any, sorter:string, sortDirection:string): Promise<APIResult> {
-    return fetchAttachment('/data/export', {filter: filter, sorter: sorter, sortDirection: sortDirection});
+export function addMember(sheet: number): Promise<APIResult> {
+    return fetchJson('/data/add', {sheet: sheet});
 }
-export function saveAttribute(id: number, attribute:string, value:string): Promise<APIResult> {
-    return fetchJson('/data/save', {id: id, attribute: attribute, value:value});
-}
-export function saveMember(member:Member): Promise<APIResult> {
-    return fetchJson('/data/save', {member: member});
+export function updateMember(member:Member): Promise<APIResult> {
+    return fetchJson('/data/update', {member: member});
 }
 export function deleteMember(member:Member): Promise<APIResult> {
     return fetchJson('/data/delete', {id: member.id});
+}
+export function getSheets(): Promise<APIResult> {
+    return fetchJson('/sheets');
+}
+export function saveSheet(sheet:Sheet): Promise<APIResult> {
+    return fetchJson('/sheets/save', sheet);
 }

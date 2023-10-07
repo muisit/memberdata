@@ -29,12 +29,11 @@ namespace MemberData\Models;
 class Member extends Base
 {
     public $table = "memberdata_member";
-    public $fields = ["id", "modifier", "modified", "deletor", "softdeleted"];
+    public $fields = ["id", "sheet_id", "modifier", "modified", "deletor", "softdeleted"];
     public $pk = "id";
 
     public function addFilter(QueryBuilder $qb, $filter)
     {
-        error_log("Member add filter");
         if (!empty($filter)) {
             if (!isset($filter['trashed'])) {
                 $qb->where($this->tableName() . '.softdeleted', null);
@@ -65,9 +64,14 @@ class Member extends Base
         return $builder->leftJoin($subquery, $joinname, $joinname . '.member_id = ' . $this->tableName() . '.id');
     }
 
+    public function withSheet(QueryBuilder $builder)
+    {
+        $sheet = new Sheet();
+        return $builder->leftJoin($sheet->tableName(), 'sheet', 'sheet.id = ' . $this->tableName() . '.sheet_id');
+    }
+
     public function collectAttributes(array $results)
     {
-        error_log('collection attributes of ' . count($results) . ' results');
         $resultsById = [];
         foreach ($results as $row) {
             $member = new static($row);

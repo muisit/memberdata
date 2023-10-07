@@ -27,37 +27,57 @@
 namespace MemberData\Controllers;
 
 use MemberData\Lib\Display;
+use MemberData\Models\Sheet;
 
 class Configuration extends Base
 {
     public function index($data)
     {
+        // return all configured attributes for this sheet
         $this->authenticate();
-        $config = $this->getConfig();
+        $config = $this->getConfig($data['model']['sheet'] ?? null);
+        error_log("generic configuration for this sheet: " . json_encode($config));
         return [
             "types" => \apply_filters(Display::PACKAGENAME . '_attribute_types', []),
             "attributes" => $config
         ];
     }
 
+    public function basic($data)
+    {
+        // return only our basic configuration, required for the settings page
+        $this->authenticate();
+        $config = $this->getBasicConfig();
+        return [
+            "types" => \apply_filters(Display::PACKAGENAME . '_attribute_types', []),
+            "attributes" => $config["sheet-" . ($data['model']['sheet'] ?? null)] ?? []
+        ];
+    }
+
     public function save($data)
     {
         $this->authenticate();
-        $config = $this->getConfig();
+        $config = $this->getBasicConfig();
 
+        $sheet = null;
         if (isset($data['model'])) {
-            $config = $data['model'];
+            $configSheet = $data['model']['settings'] ?? [];
+            $sheet = new Sheet($data['model']['sheet'] ?? null);
         }
         else {
-            $config = [];
+            $configSheet = [];
+            $sheetId = $data['model']['sheet'] ?? null;
         }
-        $config = $this->sanitizeConfiguration($config);
+        $configSheet = $this->sanitizeConfiguration($configSheet);
+        if (!empty($sheet) && !$sheet->isNew()) {
+            $config['sheet-' . $sheet->getKey()] = $configSheet;
+        }
 
         update_option(Display::PACKAGENAME . '_configuration', json_encode($config));
         return true;
     }
 
-    private function getConfig()
+    private function getBasicConfig()
     {
         // only return our own configuration, not that of plugins
         $config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);

@@ -107,4 +107,9 @@ class Base
         ob_flush();
         exit();
     }
+
+    protected function getConfig($sheet)
+    {
+        return \apply_filters(Display::PACKAGENAME . '_configuration', ['sheet' => $sheet, 'configuration' => []])['configuration'] ?? [];
+    }
 }

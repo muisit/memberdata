@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
-import { random_token } from '@/lib/functions';
+import { random_token, is_valid } from '@/lib/functions';
 const props = defineProps<{
     index:string
 }>();
@@ -24,27 +24,25 @@ function getOffset()
 
 function updateData(cb:Function|null = null)
 {
-    data.getData(
-        getOffset(),
-        parseInt(pagesize.value), // by default, only get the first 25 items
-        filter.value,
-        sorter.value,
-        sortdir.value,
-        500, // if the total is less than this cutoff, everything is returned anyway
-        cb // callback to check if updating is still useful
-    );
+    if (is_valid(data.currentSheet.id)) {
+        data.getData(
+            getOffset(),
+            parseInt(pagesize.value), // by default, only get the first 25 items
+            filter.value,
+            sorter.value,
+            sortdir.value,
+            500, // if the total is less than this cutoff, everything is returned anyway
+            cb // callback to check if updating is still useful
+        );
+    }
 }
 
-function hasWholeList()
-{
-    return data.originalData.length > 0 && data.originalData.length == data.dataCount;
-}
 
 watch(
-    () => props.index,
+    () => [props.index, data.currentSheet],
     (nw) => {
-        if (nw == 'data') {
-            // if we switch tabs, always reload the data
+        if (nw[0] == 'data') {
+            // if we switch tabs or the active sheet, always reload the data
             updateData();
         }
     },
@@ -57,7 +55,7 @@ watch(
     () => [pagesize.value, filter.value, sorter.value, sortdir.value, currentpage.value],
     () => {
         // if we do not have the whole list, use server side sorting and paging
-        if (!hasWholeList()) {
+        if (!data.hasWholeList()) {
             var newtoken = random_token();
             nonewfilter = newtoken;
             window.setTimeout(() => {
@@ -70,13 +68,12 @@ watch(
             // else use client side sorting and paging
             data.applyPagerSorterFilter(getOffset(), parseInt(pagesize.value), filter.value, sorter.value, sortdir.value);
         }
-    },
-    { immediate: true }
+    }
 )
 
 function addRow()
 {
-    data.addNewMember();
+    data.addMember();
 }
 
 function shouldDisplayPager()
