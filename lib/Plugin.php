@@ -37,12 +37,14 @@ class Plugin
         add_filter(Display::PACKAGENAME . '_find_members', fn ($settings) => MemberRetrieveService::retrieveMembers($settings), 500, 1);
 
         add_filter(Display::PACKAGENAME . '_values', function ($values) {
+            error_log("getting distinct values " . json_encode($values));
             $sheet = $values['sheet'] ?? null;
             $field = $values['field'] ?? null;
             if (!empty($field)) {
                 $model = new Member();
-                $values['result'] = array_merge($model->distinctValues($sheet, $field), $values['result'] ?? []);
+                $values['values'] = array_merge($model->distinctValues($sheet, $field), $values['values'] ?? []);
             }
+            error_log("values returns " . json_encode($values));
             return $values;
         }, 500, 1);
 

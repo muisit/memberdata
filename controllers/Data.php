@@ -75,7 +75,7 @@ class Data extends Base
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $config = $this->getConfig($settings['sheet']);
+        $config = self::getConfig($settings['sheet']);
         $i = 1;
         $j = 1;
         foreach ($config as $attribute) {
@@ -103,7 +103,7 @@ class Data extends Base
     private function determineFilters($sheet)
     {
         $filters = array();
-        $config = $this->getConfig($sheet);
+        $config = self::getConfig($sheet);
         $memberModel = new Member();
         foreach ($config as $attribute) {
             if (isset($attribute['filter']) && $attribute['filter'] == 'Y') {
@@ -143,7 +143,7 @@ class Data extends Base
         $memberModel->load();
 
         $sheetId = $memberModel->sheet_id;
-        $config = $this->getConfig($sheetId);
+        $config = self::getConfig($sheetId);
 
         if (!memberModel->isNew() && !empty($memberData)) {
             // save a whole model of attributes
@@ -178,7 +178,7 @@ class Data extends Base
         $sheetId = $data['model']['sheet'] ?? null;
         $sheet = new Sheet($sheetId);
         if (!$sheet->isNew()) {
-            $config = $this->getConfig($sheetId);
+            $config = self::getConfig($sheetId);
 
             $memberModel = new Member();
             $memberModel->sheet_id = $sheet->getKey();

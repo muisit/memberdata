@@ -35,7 +35,7 @@ class Configuration extends Base
     {
         // return all configured attributes for this sheet
         $this->authenticate();
-        $config = $this->getConfig($data['model']['sheet'] ?? null);
+        $config = self::getConfig($data['model']['sheet'] ?? null);
         error_log("generic configuration for this sheet: " . json_encode($config));
         return [
             "types" => \apply_filters(Display::PACKAGENAME . '_attribute_types', []),

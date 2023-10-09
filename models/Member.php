@@ -90,12 +90,13 @@ class Member extends Base
         return array_values($resultsById);
     }
 
-    public function distinctValues($attribute, $restrictCount = false)
+    public function distinctValues($sheetId, $attribute, $restrictCount = false)
     {
         // select only on the valid entries
         $qb = $this->select(['eva.value', 'count(*) as cnt'])
             ->withEva($attribute)
             ->where('softdeleted', null)
+            ->where('sheet_id', $sheetId)
             ->groupBy('eva.value')
             ->orderBy('cnt', 'desc')
             ->orderBy('eva.value');

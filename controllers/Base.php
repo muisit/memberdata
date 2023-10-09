@@ -108,7 +108,7 @@ class Base
         exit();
     }
 
-    protected function getConfig($sheet)
+    public static function getConfig($sheet)
     {
         return \apply_filters(Display::PACKAGENAME . '_configuration', ['sheet' => $sheet, 'configuration' => []])['configuration'] ?? [];
     }
