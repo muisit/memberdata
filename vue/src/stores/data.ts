@@ -22,7 +22,7 @@ export const useDataStore = defineStore('data', () => {
     const dataFilters:Ref<FilterOptionsByAttribute> = ref({});
     const currentSheet:Ref<Sheet> = ref({id: 0, name:''});
     const sheets:Ref<Array<Sheet>> = ref([]);
-    const currentSelection:Ref<SelectionSettings> = ref({});
+    const currentSelection:Ref<SelectionSettings> = ref({offset:0, pagesize:0, sorter:'', sortDirection:'asc', filter:{}, cutoff:0, callback: null});
 
     watch(
         () => currentSheet.value,

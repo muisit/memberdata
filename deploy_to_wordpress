@@ -6,7 +6,8 @@ RELEASE="1"
 MAJOR="0"
 MINOR="0"
 MICRO="0"
-NOGIT="0"
+DOPOT="0"
+DOTEST="0"
 
 while [ $# -gt 0 ]
 do
@@ -25,6 +26,18 @@ do
         MAJOR="1"
     fi
 
+    if [[ "x$arg" = "x-p" ]]
+    then
+        DOPOT="1"
+        RELEASE="0"
+    fi
+
+    if [[ "x$arg" = "x-t" ]]
+    then
+        DOTEST="1"
+        RELEASE="0"
+    fi
+
     if [[ "x$arg" = "x-h" ]]
     then
         echo "Deploy to Wordpress script"
@@ -33,15 +46,90 @@ do
         echo "deploy_to_wordpress [options]"
         echo ""
         echo "-h           print this help text"
+        echo "-p           search strings and regenerate the POT file"
         echo "-r           release a major release (tag with major value upgraded)"
+        echo "-t           run extended tests"
         echo "-v           release a minor release (tag with minor value upgraded)"
         echo ""
         echo "Add the WPDIR directory location of the destination SVN repository in the"
         echo ".env file next to this script. Set the PROJECT variable to the name of"
-        echo "the project/plugin name/file containing the version number."
+        echo "the project/plugin name/file containing the version number. Set the WPCLI"
+        echo "variable to the wordpress CLI executable for purposes of I18N"
         exit
     fi
 done
+
+if [[ "x$DOPOT" = "x1" ]]
+then
+    echo "Creating POT file"
+    $WPCLI i18n make-pot . languages/memberdata-ranking.pot --exclude="vue" --include="lib,models,controllers,assets,dist,memberdata-ranking.php"
+    echo "Update PO files"
+    $WPCLI i18n update-po languages/memberdata-ranking.pot
+fi
+
+if [[ -d languages ]]
+then
+    # always just update the language files
+    echo "Updating I18N output files"
+    rm -f languages/*.mo languages/*.json
+    $WPCLI i18n make-mo languages
+    # do not purge the original translations
+    $WPCLI i18n make-json languages --pretty-print --no-purge
+fi
+
+# not releasing, just quit
+if [[ "x$DOPOT" = "x1" ]]
+then
+    exit 0
+fi
+
+pushd vue > /dev/null
+npm run type-check > /dev/null 2>&1
+if [[ "x$?" = "x0" ]]
+then
+    echo "TypeScript type-check passes"
+else
+    echo "TypeScript type-check fails"
+    exit 1
+fi
+
+npm run lint > /dev/null 2>&1
+if [[ "x$?" = "x0" ]]
+then
+    echo "Lint test passes"
+else 
+    echo "Lint fails"
+    exit 1
+fi
+popd > /dev/null
+
+#echo "Running JS tests"
+#npm run --silent test -- --silent >/dev/null 2>&1
+#if [[ ! "x$?" = "x0" ]]
+#then
+#    echo "Javascript tests fail, please run tests yourself"
+#    echo "npm run --silent test"
+#    exit 1
+#else 
+#    echo "Javascript tests succeed"
+#fi
+
+#phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
+#phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+#if [[ ! "x$?" = "x0" ]]
+#then
+#    echo "PHPUnit tests fail, please run tests yourself"
+#    echo "phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+#    exit 1
+#else
+#    echo "PHPUnit tests succeed"
+#fi
+
+# not releasing, just quit
+if [[ "x$DOTEST" = "x1" ]]
+then
+    exit 0
+fi
 
 if [[ "x$MAJOR" = "x1" && "x$MINOR" = "x1" ]]
 then
@@ -77,28 +165,6 @@ fi
 
 echo "Version ${MAJ}.${MIN}.${MICR}"
 
-#echo "Running JS tests"
-#npm run --silent test -- --silent >/dev/null 2>&1
-#if [[ ! "x$?" = "x0" ]]
-#then
-#    echo "Javascript tests fail, please run tests yourself"
-#    echo "npm run --silent test"
-#    exit 1
-#else 
-#    echo "Javascript tests succeed"
-#fi
-
-#phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
-#phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
-#if [[ ! "x$?" = "x0" ]]
-#then
-#    echo "PHPUnit tests fail, please run tests yourself"
-#    echo "phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
-#    exit 1
-#else
-#    echo "PHPUnit tests succeed"
-#fi
-
 cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > tmp.$$
 mv tmp.$$ "$PROJECT.php"
 cat "$PROJECT.php" |  sed "s/\(define.*VERSION[^\"]*\"\)[^\"]*\(\".*\)/\1${MAJ}.${MIN}.${MICR}\2/"  > tmp.$$
@@ -123,10 +189,27 @@ fi
 mkdir -p $WPDIR/trunk
 cp -r -v *.php LICENSE readme.txt controllers lib models vendor dist $WPDIR/trunk
 
+if [[ -d languages ]]
+then
+    mkdir -p $WPDIR/trunk/languages
+    cp -v languages/*.po $WPDIR/trunk/languages
+
+    # purge the language files and output them small
+    # first make-json, so we purge the .po files.
+    # then make .mo from the purged .po files
+    pushd $WPDIR/trunk > /dev/null
+    rm -f languages/*.mo languages/*.json
+    $WPCLI i18n make-json languages
+    $WPCLI i18n make-mo languages
+    rm -rf languages/*.po
+    popd > /dev/null
+fi
+
 pushd /tmp > /dev/null
 cp -darpv $WPDIR/trunk /tmp/$PROJECT
 zip -r $PROJECT $PROJECT
-mv $PROJECT.zip $WPDIR
+# move it one folder up, out of the SVN
+mv $PROJECT.zip $WPDIR/..
 rm -rf /tmp/$PROJECT
 popd > /dev/null
 

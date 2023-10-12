@@ -96,7 +96,7 @@ function switchPage(pagenum:number)
 
 function onDeleteMember()
 {
-    if (!hasWholeList()) {
+    if (!data.hasWholeList()) {
         // update the list to apply paging and sorting on the server side
         updateData();
     }
