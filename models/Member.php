@@ -32,6 +32,10 @@ class Member extends Base
     public $fields = ["id", "sheet_id", "modifier", "modified", "deletor", "softdeleted"];
     public $pk = "id";
 
+    public $rules = array(
+        "sheet_id" => "nullable|int|min=0|model=" . Sheet::class,
+    );
+
     public function addFilter(QueryBuilder $qb, $filter)
     {
         if (!empty($filter)) {

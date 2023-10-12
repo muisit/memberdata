@@ -11,16 +11,13 @@ function toggleSorter(sortval: string)
 {
     if (props.sorter == sortval) {
         if (props.sortdir == 'asc') {
-            console.log('emitting change to desc');
             emits('updateSorter', [sortval, 'desc']);
         }
         else {
-            console.log('emitting change to asc');
             emits('updateSorter', [sortval, 'asc']);
         }
     }
     else {
-        console.log('emitting change to ', sortval);
         emits('updateSorter', [sortval, 'asc']);
     }
 }

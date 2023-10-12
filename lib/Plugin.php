@@ -37,14 +37,12 @@ class Plugin
         add_filter(Display::PACKAGENAME . '_find_members', fn ($settings) => MemberRetrieveService::retrieveMembers($settings), 500, 1);
 
         add_filter(Display::PACKAGENAME . '_values', function ($values) {
-            error_log("getting distinct values " . json_encode($values));
             $sheet = $values['sheet'] ?? null;
             $field = $values['field'] ?? null;
             if (!empty($field)) {
                 $model = new Member();
                 $values['values'] = array_merge($model->distinctValues($sheet, $field), $values['values'] ?? []);
             }
-            error_log("values returns " . json_encode($values));
             return $values;
         }, 500, 1);
 
@@ -107,7 +105,6 @@ class Plugin
         });
 
         add_filter(Display::PACKAGENAME . '_configuration', function ($configuration) {
-            error_log("memberdata_configuration filter " . json_encode($configuration));
             $config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
             if (empty($config)) {
                 $config = [];

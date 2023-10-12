@@ -541,7 +541,6 @@ class QueryBuilder
     {
         if (isset($this->_model) && is_object($this->_model) && method_exists($this->_model, $method)) {
             array_unshift($arguments, $this);
-            error_log("calling user func array with arguments " . json_encode($arguments));
             return call_user_func_array([$this->_model, $method], $arguments);
         }
         else {

@@ -157,16 +157,16 @@ class Base
             }
         }
         if (empty($fieldstosave)) {
-            error_log("no fields to save");
+            //error_log("no fields to save");
         }
         else {
             global $wpdb;
             if ($this->isNew()) {
-                $wpdb->insert($wpdb->base_prefix . $this->table, $fieldstosave);
+                $wpdb->insert($this->tableName(), $fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
             }
             else {
-                $wpdb->update($wpdb->base_prefix . $this->table, $fieldstosave, array($this->pk => $this->{$this->pk}));
+                $wpdb->update($this->tableName(), $fieldstosave, array($this->pk => $this->{$this->pk}));
             }
             $this->_state = "loaded";
         }
@@ -246,7 +246,7 @@ class Base
         ) {
             return true;
         }
-        return strcmp(strval($value), $original) != 0;
+        return strcmp(strval($value), strval($original)) != 0;
     }
 
     public function delete()

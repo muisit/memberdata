@@ -19,10 +19,8 @@ class MemberRetrieveService
         $memberModel = new Member();
         self::$joinAliases = [];
         $qb = $memberModel->select($memberModel->tableName() . '.id')->where('sheet_id', $sheet);
-        $qb = self::combineWithEva($qb, $filter, $sorter);
-        if (!empty($filter)) {
-            $count = self::addFilter($qb, $filter);
-        }
+        $qb = self::combineWithEva($qb, $filter, $sorter, $sheet);
+        $qb = self::addFilter($qb, empty($filter) ? [] : $filter, $sheet);
         $count = $qb->count();
 
         return $count;
@@ -42,11 +40,9 @@ class MemberRetrieveService
         $memberModel = new Member();
         self::$joinAliases = [];
         $qb = $memberModel->select($memberModel->tableName() . '.id')->where('sheet_id', $sheet);
-        $qb = self::combineWithEva($qb, $filter, $sorter);
+        $qb = self::combineWithEva($qb, $filter, $sorter, $sheet);
         $qb = self::addSorter($qb, $memberModel, $sorter, $sortDirection);
-        if (!empty($filter)) {
-            $qb = self::addFilter($qb, $filter);
-        }
+        $qb = self::addFilter($qb, empty($filter) ? [] : $filter, $sheet);
 
         // use cutoff to determine if we can return the whole set, or just a page
         if ($count > $cutoff && $pagesize > 0 && $offset >= 0) {
@@ -61,11 +57,11 @@ class MemberRetrieveService
         return $settings;
     }
 
-    private static function addFilter(QueryBuilder $qb, array $filter)
+    private static function addFilter(QueryBuilder $qb, array $filter, int $sheet)
     {
-        $config = self::getConfig();
+        $config = self::getConfig($sheet);
         foreach ($config as $attribute) {
-            $aname = $attribute['name'];
+            $aname = $attribute['name'] ?? '';
             if (isset($filter[$aname])) {
                 $search = $filter[$aname]["search"] ?? null;
                 if ($search == null) {
@@ -116,14 +112,14 @@ class MemberRetrieveService
         return $qb;
     }
 
-    private static function combineWithEva(QueryBuilder $qb, $filter, $sorter)
+    private static function combineWithEva(QueryBuilder $qb, $filter, $sorter, $sheet)
     {
         if (!empty($sorter) && $sorter != 'id') {
             $qb->withEva($sorter, 'eva');
         }
 
         if (!empty($filter)) {
-            $config = self::getConfig();
+            $config = self::getConfig($sheet);
             foreach ($config as $attribute) {
                 $aname = $attribute['name'];
                 if (isset($filter[$aname]) && count($filter[$aname])) {
@@ -141,12 +137,15 @@ class MemberRetrieveService
         return $qb;
     }
 
-    private static function getConfig()
+    private static function getConfig(int $sheet)
     {
         $config = json_decode(get_option(Display::PACKAGENAME . "_configuration"), true);
         if (empty($config)) {
             $config = [];
         }
-        return $config;
+        if (isset($config['sheet-' . $sheet])) {
+            return $config['sheet-' . $sheet];
+        }
+        return [];
     }
 }

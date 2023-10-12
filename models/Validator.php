@@ -418,8 +418,8 @@ class Validator
                 $attrmodel = new $cname($id);
                 $attrmodel->load();
 
-                if ($attrmodel->getKey() != $id) {
-                    $retval = false;
+                if ($attrmodel->getKey() == $id) {
+                    $retval = true;
                 }
                 if ($msg === null) {
                     $msg = "Please select a valid value for {label}";
