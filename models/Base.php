@@ -157,7 +157,7 @@ class Base
             }
         }
         if (empty($fieldstosave)) {
-            //error_log("no fields to save");
+            memberdata_log("no fields to save");
         }
         else {
             global $wpdb;
@@ -338,12 +338,12 @@ class Base
                 }
             }
 
-            error_log("SQL: $query");
-            error_log("VAL: " . json_encode($replvals));
+            memberdata_log("SQL: $query");
+            memberdata_log("VAL: " . json_encode($replvals));
             $query = $wpdb->prepare($query, $replvals);
         }
         else {
-            error_log("SQL: $query");
+            memberdata_log("SQL: $query");
         }
 
         $results = $wpdb->get_results($query);

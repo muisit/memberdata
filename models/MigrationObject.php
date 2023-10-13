@@ -36,12 +36,12 @@ class MigrationObject
 
     public function up()
     {
-        error_log("abstract parent UP");
+        memberdata_log("abstract parent UP");
     }
 
     public function down()
     {
-        error_log("abstract parent DOWN");
+        memberdata_log("abstract parent DOWN");
     }
 
     public function tableName($name)

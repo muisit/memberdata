@@ -79,7 +79,7 @@ class Base
     {
         $result = wp_verify_nonce($this->nonce, self::createNonceText());
         if (!($result === 1 || $result === 2)) {
-            error_log('die because nonce does not match');
+            memberdata_log('die because nonce does not match');
             die(403);
         }
     }
@@ -88,7 +88,7 @@ class Base
     {
         $this->checkNonce();
         if (!current_user_can('manage_' . Display::PACKAGENAME)) {
-            error_log("unauthenticated");
+            memberdata_log("unauthenticated");
             die(403);
         }
     }

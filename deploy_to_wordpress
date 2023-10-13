@@ -205,6 +205,12 @@ then
     popd > /dev/null
 fi
 
+# unset all debug flags
+pushd $WPDIR/trunk > /dev/null
+cat $PROJECT.php | sed "s/\(define.*DEBUG.*\).*true/\1false/i" > tmp.php
+mv tmp.php $PROJECT.php
+popd > /dev/null
+
 pushd /tmp > /dev/null
 cp -darpv $WPDIR/trunk /tmp/$PROJECT
 zip -r $PROJECT $PROJECT
