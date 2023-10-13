@@ -3,7 +3,7 @@ import type { Attribute } from '../lib/types';
 const props = defineProps<{
     attribute:Attribute;
 }>();
-const emits = defineEmits(['onUpdate']);
+const emits = defineEmits(['onUpdate', 'onDelete']);
 
 import { useDataStore } from '../stores/data';
 const data = useDataStore();
@@ -36,13 +36,18 @@ function listAttributeTypes()
 }
 
 import {ElIcon, ElInput, ElSelect, ElOption, ElRow, ElCol, ElCheckbox} from 'element-plus';
-import { Rank } from '@element-plus/icons-vue';
+import { Rank, Delete } from '@element-plus/icons-vue';
 </script>
 <template>
     <div class="attribute">
         <div class="attribute-handle">
             <ElIcon size="large">
                 <Rank />
+            </ElIcon>
+        </div>
+        <div class="attribute-delete" @click="() => $emit('onDelete')">
+            <ElIcon size="large">
+                <Delete />
             </ElIcon>
         </div>
         <div class="attribute-settings">

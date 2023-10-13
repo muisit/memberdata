@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import { getBasicConfiguration } from '@/lib/api';
+import { random_token } from '@/lib/functions';
 const props = defineProps<{
     index:string
 }>();
@@ -18,7 +19,10 @@ watch(
         if (nw[0] == 'settings') {
             getBasicConfiguration(data.currentSheet.id).then((data) => {
                 if (data.data) {
-                    basicConfiguration.value = data.data.attributes;
+                    basicConfiguration.value = data.data.attributes.map((a:Attribute) => {
+                        a.token = random_token();
+                        return a;
+                    });
                 }
                 disableButton.value = true;
             });
@@ -26,6 +30,14 @@ watch(
     },
     {immediate: true}
 )
+
+function onDelete(attribute:Attribute)
+{
+    if (confirm('Are you sure you want to remove this attribute from the list?')) {
+        basicConfiguration.value = basicConfiguration.value.filter((a) => a.token != attribute.token);
+        disableButton.value = false;
+    }
+}
 
 function onUpdate(attribute:Attribute, field:FieldDefinition)
 {
@@ -86,7 +98,8 @@ import draggable from 'vuedraggable';
                 <template #item="{element}">
                     <AttributeConfiguration
                     :attribute="element"
-                    @on-update="(field) => onUpdate(element, field)" />
+                    @on-update="(field) => onUpdate(element, field)"
+                    @on-delete="() => onDelete(element)" />
                 </template>
 
                 <template #header>

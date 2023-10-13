@@ -80,7 +80,6 @@ import MemberUpdateDialog from './MemberUpdateDialog.vue';
 </script>
 <template>
     <div class="data-grid">
-        {{ props.sorter }} {{ props.sortdir}} / {{  props.filter }}
         <div class="scroll-container">
             <div class="inner-container">
                 <table>

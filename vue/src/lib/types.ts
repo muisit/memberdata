@@ -10,6 +10,7 @@ export interface Attribute {
     options?: any;
     optdefault?: any;
     filter: string;
+    token?: string;
 }
 
 export interface FilterSpec {
