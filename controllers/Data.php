@@ -145,7 +145,7 @@ class Data extends Base
         $sheetId = $memberModel->sheet_id;
         $config = self::getConfig($sheetId);
 
-        if (!memberModel->isNew() && !empty($memberData)) {
+        if (!$memberModel->isNew() && !empty($memberData)) {
             // save a whole model of attributes
             // copy all supported attributes, drop the rest
             // do not overwrite attributes that we support but

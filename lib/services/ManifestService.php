@@ -63,7 +63,7 @@ class ManifestService
             }
             if (isset($manifest[$entryPoint]['imports'])) {
                 foreach ($manifest[$entryPoint]['imports'] as $asset) {
-                    self::enqueueAsset($asset, $manifest, $packagename, $dir, null);
+                    self::enqueueAsset($asset, $manifest, $packagename, $dir, $i18nDomain);
                 }
             }
             if (isset($manifest[$entryPoint]['file'])) {
