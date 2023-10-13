@@ -151,11 +151,12 @@ class Data extends Base
             // do not overwrite attributes that we support but
             // have no value.
             $newData = [];
+            $availableAttributes = array_keys($memberData);
             foreach ($config as $attribute) {
                 $attrname = $attribute['name'] ?? '';
-                // special test on null value, allow it
-                if (isset($memberData[$attrname]) || $memberData[$attrname] === null) {
-                    $newData[$attrname] = $memberData[$attrname];
+                // special test to allow null values (isset fails when the value is null)
+                if (in_array($attrname, $availableAttributes)) {
+                    $newData[$attrname] = $memberData[$attrname] ?? null;
                 }
             }
             $memberData = $newData;
@@ -163,8 +164,7 @@ class Data extends Base
             $settings = [
                 'member' => $memberModel,
                 'attributes' => $memberData,
-                'messages' => [],
-                'config' => $config
+                'messages' => []
             ];
             $settings = \apply_filters(Display::PACKAGENAME . '_save_attributes', $settings);
             return ["messages" => $settings['messages']];

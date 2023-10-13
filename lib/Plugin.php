@@ -58,13 +58,12 @@ class Plugin
             $member = $settings['member'] ?? null;
             $attributes = $settings['attributes'] ?? [];
             $messages = $settings['messages'] ?? [];
-            $config = $settings['config'] ?? null;
+            $config = $settings['configuration'] ?? null;
             if (empty($config)) {
                 $config = \apply_filters(Display::PACKAGENAME . '_configuration', ['sheet' => $member->sheet_id, 'configuration' => []]);
             }
             // strip down to only the list of attributes
             $config = $config['configuration'] ?? [];
-
             $attributesByName = [];
             foreach ($config as $attr) {
                 if (isset($attr['name'])) {

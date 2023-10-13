@@ -32,7 +32,7 @@ The plugin defines the following filters and actions on which to interface:
    the array determines the display order in the front end interface. Each entry has a `name`, a `type`, an optional 
    `rules` list filled with the default settings of the type and a `filter` boolean value ('Y' or 'N') indicating if 
    this attribute can be used to filter in the front end display.
-   The configuration consists of a dictionary with a `sheet` ID and a `configuration` array, which will hold the result.
+   The configuration parameter consists of a dictionary with a `sheet` ID and a `configuration` array, which will hold the result.
 - `memberdata_find_members(array $settings)`: this filter assembles a list of members and their attribute values. Hook into
    this to add new attributes or adjust existing attributes. The core assembly is done at priority `500`.
    The `$settings` array can contain fields for `offset` and `pagesize` (`0` or `null` means no paging), `sorter` 
@@ -48,7 +48,7 @@ The plugin defines the following filters and actions on which to interface:
    (with a database identifier).
 - `memberdata_save_attributes(array $settings)`: this is called when a client wants to save a single or a set of attributes.
    The settings array consists of `member` (Member model), `attributes` (dictionary of attribute->value), `messages`
-   (array of validation messages) and `config` (array of supported attributes, as returned by `memberdata_configuration`, optional)
+   (array of validation messages) and `configuration` (array of supported attributes, as returned by `memberdata_configuration`, optional)
 - `memberdata_values($settings)`: filter to retrieve a set of unique values for a specific attribute field. The `settings`
    array contains a `sheet` ID, an entry `field` to indicate the attribute name and an entry `values` which contains the 
    result list.
@@ -60,7 +60,7 @@ The plugin defines the following filters and actions on which to interface:
 ## Examples
 `add_action('memberdata_loaded', function () { /* perform dependent plugin initialisations */})`
 `$types = \apply_filters('memberdata_attribute_types', []);`
-`$configuration = \apply_filters('memberdata_configuration', ['sheet' => $sheetId, 'configuration' => []])['configuration'] ?? [];`
+`$attributes = \apply_filters('memberdata_configuration', ['sheet' => $sheetId, 'configuration' => []])['configuration'] ?? [];`
 `$members = \apply_filters('memberdata_find_members', ['list' => [], 'sheet' => $sheetId', 'sorter' => 'Name', 'sortDirection' => 'asc', 'offset' => 0, 'pagesize' => 20, 'filter' => ['Name' => ['search' => 'Pete']]])['list'] ?? [];`
 `\apply_filters('memberdata_save_member', $member);`
 `\apply_filter('memberdata_save_attributes', ['member' => $member. 'attributes' => ['Name' => 'Pete'], 'messages' => []]);`

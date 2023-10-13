@@ -50,7 +50,6 @@ function saveUpdate()
             }
             else {
                 updateDialogVisible.value = false;
-                data.updateMember(selectedMember.value);
                 selectedMember.value = {id:0, sheet_id: 0};
             }
         });

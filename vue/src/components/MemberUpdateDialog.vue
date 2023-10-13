@@ -52,7 +52,8 @@ import { ElButton, ElDialog, ElForm, ElFormItem } from 'element-plus'
 <template>
     <ElDialog :model-value="props.visible" title="Member Update" :before-close="(done) => { closeForm(); done(false); }">
         <ElForm>
-            <ElFormItem v-for="attribute in data.configuration" :key="attribute.name" :label="attribute.name">
+            <ElFormItem v-for="attribute in data.configuration" :key="attribute.name">
+                <label class="el-form-item__label">{{ attribute.name }}</label>
                 <AttributeInput :attribute="attribute" :member="props.member" @on-update="(v) => onUpdate(attribute, v)" :errors="errorMessages[attribute.name] || []"/>
             </ElFormItem>
         </ElForm>
