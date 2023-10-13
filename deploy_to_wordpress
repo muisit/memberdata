@@ -62,9 +62,9 @@ done
 if [[ "x$DOPOT" = "x1" ]]
 then
     echo "Creating POT file"
-    $WPCLI i18n make-pot . languages/memberdata-ranking.pot --exclude="vue" --include="lib,models,controllers,assets,dist,memberdata-ranking.php"
+    $WPCLI i18n make-pot . languages/$PROJECT.pot --exclude="vue" --include="lib,models,controllers,assets,dist,$PROJECT.php"
     echo "Update PO files"
-    $WPCLI i18n update-po languages/memberdata-ranking.pot
+    $WPCLI i18n update-po languages/$PROJECT.pot
 fi
 
 if [[ -d languages ]]

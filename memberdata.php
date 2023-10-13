@@ -12,7 +12,7 @@
  * Plugin Name:         memberdata
  * Plugin URI:          https://github.com/muisit/wp-elo
  * Description:         Basic registration of membership data without creating WP accounts
- * Version:             1.1.1
+ * Version:             1.1.2
  * Requires at least:   6.1
  * Requires PHP:        8.0
  * Author:              Michiel Uitdehaag
@@ -38,7 +38,7 @@
  * along with memberdata.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-define('MEMBERDATA_VERSION', "1.1.1");
+define('MEMBERDATA_VERSION', "1.1.2");
 define('MEMBERDATA_PACKAGENAME', 'memberdata');
 define('MEMBERDATA_DEBUG', true);
 

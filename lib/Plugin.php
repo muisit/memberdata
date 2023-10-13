@@ -60,9 +60,10 @@ class Plugin
             $messages = $settings['messages'] ?? [];
             $config = $settings['config'] ?? null;
             if (empty($config)) {
-                $configuration = \apply_filters(Display::PACKAGENAME . '_configuration', ['sheet' => $member->sheet_id, 'configuration' => []]);
-                $config = $configuration['configuration'] || [];
+                $config = \apply_filters(Display::PACKAGENAME . '_configuration', ['sheet' => $member->sheet_id, 'configuration' => []]);
             }
+            // strip down to only the list of attributes
+            $config = $config['configuration'] ?? [];
 
             $attributesByName = [];
             foreach ($config as $attr) {
@@ -111,7 +112,7 @@ class Plugin
                 add_option(Display::PACKAGENAME . '_configuration', json_encode($config));
             }
             if (isset($configuration['sheet']) && isset($config['sheet-' . $configuration['sheet']])) {
-                $configuration['configuration'] = array_merge($configuration['configuration'], $config['sheet-' . $configuration['sheet']]);
+                $configuration['configuration'] = array_merge($configuration['configuration'] ?? [], $config['sheet-' . $configuration['sheet']]);
             }
             return $configuration;
         }, 500, 1);
