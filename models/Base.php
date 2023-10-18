@@ -163,10 +163,10 @@ class Base
             global $wpdb;
             if ($this->isNew()) {
                 $wpdb->insert($this->tableName(), $fieldstosave);
-                $this->{$this->pk} = $wpdb->insert_id;
+                $this->setKey($wpdb->insert_id);
             }
             else {
-                $wpdb->update($this->tableName(), $fieldstosave, array($this->pk => $this->{$this->pk}));
+                $wpdb->update($this->tableName(), $fieldstosave, array($this->pk => $this->getKey()));
             }
             $this->_state = "loaded";
         }

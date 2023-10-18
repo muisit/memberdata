@@ -46,7 +46,7 @@ class Sheets extends Base
         $this->authenticate();
 
         if (isset($data['model'])) {
-            $sheet = $data['model'];
+            $sheet = (array)$data['model'];
         }
         $retval = \apply_filters(Display::PACKAGENAME . '_save_sheet', ['sheet' => $sheet, 'messages' => []]);
         if (count($retval['messages']) == 0) {

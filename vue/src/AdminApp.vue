@@ -31,7 +31,15 @@ function closeSheetDialog()
 
 function saveSheetDialog()
 {
-    data.sheets.push(data.currentSheet);
+    var found = false;
+    data.sheets.map((sh) => {
+        if (sh.id == data.currentSheet.id) {
+            found = true;
+        }
+    });
+    if (!found) {
+        data.sheets.push(data.currentSheet);
+    }
     sheetDialog.value = false;
 }
 
@@ -43,7 +51,8 @@ function updateSheetDialog(fieldDef:FieldDefinition)
 }
 
 const tabindex = ref('data');
-import { ElTabs, ElTabPane, ElSelect, ElOption, ElButton } from 'element-plus';
+import { ElTabs, ElTabPane, ElSelect, ElOption, ElButton, ElIcon } from 'element-plus';
+import { Edit } from '@element-plus/icons-vue';
 import ConfigurationView from './components/ConfigurationView.vue';
 import DataView from './components/DataView.vue';
 import SheetDialog from './components/SheetDialog.vue';
@@ -54,7 +63,12 @@ import SheetDialog from './components/SheetDialog.vue';
             <h1>Memberdata Manager</h1>
             <div class="subheader">
                 <span v-if="!is_valid(data.currentSheet.id)">Pick a sheet</span>
-                <span v-else>{{ data.currentSheet.name }}</span>
+                <span v-else>
+                    {{ data.currentSheet.name }}
+                    <ElIcon size='large' @click="() => sheetDialog = true">
+                        <Edit />
+                    </ElIcon>
+                </span>
             </div>
             <div class="action-buttons">
                 <ElSelect :model-value="data.currentSheet.id" @update:model-value="(e) => data.pickSheet(e)">

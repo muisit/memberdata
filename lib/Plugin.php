@@ -126,14 +126,19 @@ class Plugin
         }, 500, 1);
 
         add_filter(Display::PACKAGENAME . '_save_sheet', function ($settings) {
-            $model = new Sheet($settings['sheet'] ?? null);
-            if (!empty($model)) {
-                if ($model->validate()) {
-                    $model->save();
+            $model = new Sheet($settings['sheet']['id'] ?? 0);
+            $attributes = $settings['sheet'] ?? [];
+            foreach ($model->fields as $field) {
+                if (in_array($field, array_keys($attributes))) {
+                    $model->{$field} = $attributes[$field];
                 }
-                else {
-                    $settings['messages'] = array_merge($settings['messages'] ?? [], $model->errors);
-                }
+            }
+
+            if ($model->validate()) {
+                $model->save();
+            }
+            else {
+                $settings['messages'] = array_merge($settings['messages'] ?? [], $model->errors);
             }
             return $settings;
         }, 500, 1);
