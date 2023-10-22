@@ -41,6 +41,12 @@ class EVA extends Base
         }
     }
 
+    public function withMember(QueryBuilder $builder, $joinname = 'member')
+    {
+        $member = new Member();
+        return $builder->innerJoin($member->tableName(), $joinname, $joinname . '.id = ' . $this->tableName() . '.member_id');
+    }
+
     public function pageOnAttribute($name, $offset, $pagesize, $sortingOrder = 'asc')
     {
         if (!in_array($sortingOrder, ['asc', 'desc'])) {

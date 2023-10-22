@@ -72,7 +72,7 @@ class Configuration extends Base
             $config['sheet-' . $sheet->getKey()] = $configSheet;
         }
 
-        update_option(Display::PACKAGENAME . '_configuration', json_encode($config));
+        \apply_filters(Display::PACKAGENAME . '_save_configuration', $config);
         return true;
     }
 
@@ -97,6 +97,7 @@ class Configuration extends Base
             if (isset($attribute['name']) && isset($attribute['type']) && in_array($attribute["type"], array_keys($types))) {
                 $a["type"] = $attribute["type"];
                 $a["name"] = $this->sanitizeName(isset($attribute["name"]) ? $attribute["name"] : $attribute["type"], $attribute["type"]);
+                $a['originalName'] = $this->sanitizeName(isset($attribute["originalName"]) ? $attribute["originalName"] : $a["name"], $a['name']);
                 $a["rules"] = $attribute["rules"];
                 if (isset($attribute["options"])) {
                     $a["options"] = $attribute["options"];

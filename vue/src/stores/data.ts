@@ -86,6 +86,7 @@ export const useDataStore = defineStore('data', () => {
                 if (allowedTypes.includes(attribute.type) && !attributeNames.includes(attribute.name)) {
                     toSaveObject.push({
                         name: attribute.name,
+                        originalName: attribute.originalName,
                         type: attribute.type,
                         rules: attribute.rules,
                         options: attribute.options,

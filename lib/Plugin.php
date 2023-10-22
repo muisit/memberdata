@@ -28,6 +28,7 @@ namespace MemberData\Lib;
 
 use MemberData\Lib\Services\MemberRetrieveService;
 use MemberData\Models\Member;
+use MemberData\Models\EVA;
 use MemberData\Models\Sheet;
 
 class Plugin
@@ -115,6 +116,37 @@ class Plugin
             }
             return $configuration;
         }, 500, 1);
+
+        add_filter(Display::PACKAGENAME . '_save_configuration', function ($configuration) {
+            // if there are 'originalName' entries that differ from the 'name' value, update all EVA attributes
+            // to the new name
+            $newConfiguration = [];
+            foreach ($configuration as $sheetno => $attributes) {
+                $sheet = new Sheet(substr($sheetno, 6));
+                $sheet->load();
+                if (!$sheet->isNew()) {
+                    $newConfiguration[$sheetno] = array_map(fn ($attr) => self::updateAttributeName($attr, $sheet), $attributes);
+                }
+            }
+
+            update_option(Display::PACKAGENAME . '_configuration', json_encode($newConfiguration));
+            // return the original configuration to allow other plugins to detect any name changes as well
+            return $configuration;
+        }, 500, 1);
+    }
+
+    private static function updateAttributeName($attribute, Sheet $sheet)
+    {
+        if (isset($attribute['name']) && isset($attribute['originalName']) && $attribute['name'] != $attribute['originalName']) {
+            $evamodel = new EVA();
+            $evamodel->query()
+                ->withMember('member')
+                ->set('attribute', $attribute['name'])
+                ->where('attribute', $attribute['originalName'])
+                ->where('member.sheet_id', $sheet->getKey())
+                ->update();
+        }
+        return array_filter((array)$attribute, fn($key) => $key != 'originalName', ARRAY_FILTER_USE_KEY);
     }
 
     private static function registerSheetCalls()

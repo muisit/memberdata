@@ -21,6 +21,7 @@ watch(
                 if (data.data) {
                     basicConfiguration.value = data.data.attributes.map((a:Attribute) => {
                         a.token = random_token();
+                        a.originalName = a.name;
                         return a;
                     });
                 }
@@ -53,13 +54,55 @@ function onUpdate(attribute:Attribute, field:FieldDefinition)
     disableButton.value = false;
 }
 
+interface TokenByName {
+    [key:string]: Array<string|undefined>;
+}
+
 function saveAll()
 {
     disableButton.value = true;
-    data.saveConfiguration(basicConfiguration.value)
-        .then(() => {
-            alert("Configuration updated succesfully");
-        });
+
+    let messages:Array<string> = [];
+    let namesByToken:TokenByName = {};
+    basicConfiguration.value.forEach((a:Attribute) => {
+        let name = ('' + a.name).trim();
+
+        if (name != a.name) {
+            messages.push("Attribute '" + name + "' has white space before or after. Please remove the whitespace in this name");
+        }
+        else if (name.length == 0) {
+            messages.push("Attribute with empty name found. Please provide names with at least 1 character");
+        }
+        else {
+            if (!namesByToken[name]) {
+                namesByToken[name] = [];
+            }
+            namesByToken[name].push(a.token);
+            if (!namesByToken[a.originalName || name]) {
+                namesByToken[a.originalName || name] = [];
+            }
+            if (!namesByToken[a.originalName || name].includes(a.token)) {
+                namesByToken[a.originalName || name].push(a.token);
+            }
+        }
+    });
+
+    Object.keys(namesByToken).forEach((name) => {
+        // assume we have no undefined tokens here
+        if (namesByToken[name].length > 1) {
+            messages.push("Found duplicate name for attribute: ''" + name + "'. You cannot have two attributes named the same. You also cannot rename attributes to a name currently in use. Please adjust the name.");
+        }
+    });
+
+    if (messages.length) {
+        alert(messages.join("\r\n"));
+    }
+    else {
+        data.saveConfiguration(basicConfiguration.value)
+            .then(() => {
+                alert("Configuration updated succesfully");
+            });
+    }
 }
 
 function add() {
@@ -90,6 +133,10 @@ import draggable from 'vuedraggable';
             <RulesInfoDialog :visible="showRulesDialog" @on-close="() => showRulesDialog = false"/>
         </div>
         <div class="configuration-view">
+            <div class="save-button">
+                <ElButton @click="saveAll" type='primary' :disabled="disableButton">Save</ElButton>
+            </div>
+
             <draggable
                 v-model="basicConfiguration" 
                 handle=".attribute-handle"

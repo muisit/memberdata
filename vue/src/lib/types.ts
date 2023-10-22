@@ -5,6 +5,7 @@ export interface FieldDefinition {
 
 export interface Attribute {
     name: string;
+    originalName?: string;
     type: string;
     rules?: string;
     options?: any;

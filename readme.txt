@@ -33,6 +33,10 @@ The plugin defines the following filters and actions on which to interface:
    `rules` list filled with the default settings of the type and a `filter` boolean value ('Y' or 'N') indicating if 
    this attribute can be used to filter in the front end display.
    The configuration parameter consists of a dictionary with a `sheet` ID and a `configuration` array, which will hold the result.
+- `memberdata_save_configuration($configuration)`: this stores the sheet-related configuration for the plugin. The configuration
+   is a dictionary with entries for each sheet named 'sheet-' + sheet-ID, which holds an array of attributes. The order of
+   the array determines the order of the header.
+   This filter will rename attributes if an attribute entry has an 'originalName' field which differs from the 'name' field.
 - `memberdata_find_members(array $settings)`: this filter assembles a list of members and their attribute values. Hook into
    this to add new attributes or adjust existing attributes. The core assembly is done at priority `500`.
    The `$settings` array can contain fields for `offset` and `pagesize` (`0` or `null` means no paging), `sorter` 
