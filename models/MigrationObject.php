@@ -34,6 +34,12 @@ class MigrationObject
         return $wpdb->query($txt);
     }
 
+    public function escape($txt)
+    {
+        global $wpdb;
+        return $wpdb->_escape($txt);
+    }
+
     public function up()
     {
         memberdata_log("abstract parent UP");

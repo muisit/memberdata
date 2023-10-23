@@ -93,6 +93,11 @@ class Base
         }
     }
 
+    protected function canAuthenticate()
+    {
+        return current_user_can('manage_' . Display::PACKAGENAME);
+    }
+
     protected function outputCSV($name, $fileData)
     {
         header('Content-Disposition: attachment; filename="' . $name . '";');

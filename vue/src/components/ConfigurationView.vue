@@ -17,20 +17,25 @@ watch(
     () => [props.index, data.currentSheet],
     (nw) => {
         if (nw[0] == 'settings') {
-            getBasicConfiguration(data.currentSheet.id).then((data) => {
-                if (data.data) {
-                    basicConfiguration.value = data.data.attributes.map((a:Attribute) => {
-                        a.token = random_token();
-                        a.originalName = a.name;
-                        return a;
-                    });
-                }
-                disableButton.value = true;
-            });
+            updateBasicConfiguration();
         }
     },
     {immediate: true}
 )
+
+function updateBasicConfiguration()
+{
+    getBasicConfiguration(data.currentSheet.id).then((data) => {
+        if (data.data) {
+            basicConfiguration.value = data.data.attributes.map((a:Attribute) => {
+                a.token = random_token();
+                a.originalName = a.name;
+                return a;
+            });
+        }
+        disableButton.value = true;
+    });
+}
 
 function onDelete(attribute:Attribute)
 {
@@ -100,6 +105,8 @@ function saveAll()
     else {
         data.saveConfiguration(basicConfiguration.value)
             .then(() => {
+                // re-retrieve the configuration to make sure our originalName settings are synced
+                updateBasicConfiguration();
                 alert("Configuration updated succesfully");
             });
     }

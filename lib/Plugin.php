@@ -94,14 +94,14 @@ class Plugin
     private static function registerTypeCalls()
     {
         add_filter(Display::PACKAGENAME . '_attribute_types', function ($config) {
-            $config["text"] = ["label" => "Text", "rules" => "required|max=100", "options" => null];
-            $config["int"] = ["label" => "Integer", "rules" => "required|min=0"];
-            $config["number"] = ["label" => "Number", "rules" => "required|min=0"];
-            $config["email"] = ["label" => "E-mail", "rules" => "required|email"];
-            $config["money"] = ["label" => "Money", "rules" => "required|min=0", "options" => "text", "optdefault" => "%.2f"];
-            $config["date"] = ["label" => "Date", "rules" => "required|date", "options" => "text", "optdefault" => 'Y-m-d'];
-            $config["datetime"] = ["label" => "Date + Time", "rules" => "required|datetime", "options" => "text", "optdefault" => 'Y-m-d H:i:s'];
-            $config["enum"] = ["label" => "Enumeration", "rules" => "required|enum", "options" => "text", "optdefault" => "opt1|opt2"];
+            $config["text"] = ["label" => "Text", "rules" => "", "options" => null];
+            $config["int"] = ["label" => "Integer", "rules" => "min=0"];
+            $config["number"] = ["label" => "Number", "rules" => "min=0"];
+            $config["email"] = ["label" => "E-mail", "rules" => "email"];
+            $config["money"] = ["label" => "Money", "rules" => "min=0", "options" => "text", "optdefault" => "%.2f"];
+            $config["date"] = ["label" => "Date", "rules" => "date", "options" => "text", "optdefault" => 'Y-m-d'];
+            $config["datetime"] = ["label" => "Date + Time", "rules" => "datetime", "options" => "text", "optdefault" => 'Y-m-d H:i:s'];
+            $config["enum"] = ["label" => "Enumeration", "rules" => "enum", "options" => "text", "optdefault" => "opt1|opt2"];
             return $config;
         });
 
