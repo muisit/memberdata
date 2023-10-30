@@ -33,8 +33,13 @@ function getFileNameFromContentDispostionHeader(header:string|null): string {
     contentDispostion.forEach((thisValue) => {
         if (thisValue.trim().indexOf(fileNameToken) === 0) {
             fileName = decodeURIComponent(thisValue.replace(fileNameToken, ''));
+            fileName = fileName.trim();
         }
     });
+
+    if (fileName.length > 0 && fileName[0] == '"' && fileName[fileName.length - 1] == '"') {
+        fileName = fileName.substring(1, fileName.length - 1);
+    }
     return fileName;
 }
 

@@ -61,7 +61,11 @@ export const useDataStore = defineStore('data', () => {
 
     function getConfiguration(id:number|null = null)
     {
-        return getConfigurationAPI(id || currentSheet.value.id).then((data:any) => {
+        let sheetId = id;
+        if (!sheetId && currentSheet.value) {
+            sheetId = currentSheet.value.id;
+        }
+        return getConfigurationAPI(sheetId || 0).then((data:any) => {
             if (data.data) {
                 types.value = data.data.types;
                 configuration.value = data.data.attributes;

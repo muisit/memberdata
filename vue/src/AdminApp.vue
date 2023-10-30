@@ -12,8 +12,10 @@ const data = useDataStore();
 data.nonce = props.nonce;
 data.baseUrl = props.url;
 data.getSheets().then(() => {
-    data.currentSheet = data.sheets[0];
-    data.getConfiguration();
+    if (data.sheets.length) {
+        data.currentSheet = data.sheets[0];
+        data.getConfiguration();
+    }
 });
 
 const sheetDialog = ref(false);
@@ -62,7 +64,7 @@ import SheetDialog from './components/SheetDialog.vue';
         <div class='main-header'>
             <h1>Memberdata Manager</h1>
             <div class="subheader">
-                <span v-if="!is_valid(data.currentSheet.id)">Pick a sheet</span>
+                <span v-if="!data.currentSheet || !is_valid(data.currentSheet.id)">Pick a sheet</span>
                 <span v-else>
                     {{ data.currentSheet.name }}
                     <ElIcon size='large' @click="() => sheetDialog = true">
@@ -71,7 +73,7 @@ import SheetDialog from './components/SheetDialog.vue';
                 </span>
             </div>
             <div class="action-buttons">
-                <ElSelect :model-value="data.currentSheet.id" @update:model-value="(e) => data.pickSheet(e)">
+                <ElSelect :model-value="data.currentSheet.id || 0" @update:model-value="(e) => data.pickSheet(e)">
                     <ElOption v-for="sheet in data.sheets" :key="sheet.id" :value="sheet.id" :label="sheet.name"/>
                 </ElSelect>
                 <ElButton @click="openSheetDialog" type="primary">Add</ElButton>
